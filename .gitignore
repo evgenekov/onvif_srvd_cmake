@@ -39,6 +39,9 @@ generated/
 *.log
 *.depend
 
+# IDE Specific files
+*.kdev4
+
 
 
 # Files that we don't want to ignore
