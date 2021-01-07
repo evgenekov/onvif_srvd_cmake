@@ -64,7 +64,7 @@ endif
 
 
 
-
+CXXFLAGS        += -lmosquitto
 
 
 
@@ -94,7 +94,8 @@ SOURCES  = $(COMMON_DIR)/daemon.c                 \
            $(GENERATED_DIR)/soapC.cpp             \
            $(SOAP_SRC)                            \
            $(SOAP_SERVICE_SRC)                    \
-           $(WSSE_SOURCES)
+           $(WSSE_SOURCES)                        \
+           $(COMMON_DIR)/mosquitto_handler.c
 
 
 
