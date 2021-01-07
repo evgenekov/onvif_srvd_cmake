@@ -29,7 +29,26 @@ ServiceContext::ServiceContext():
 {
 }
 
+void ServiceContext::SendMosquittoMsg(const char* msg)
+{
+    mosquitto_lib_init();
 
+    mosq = mosquitto_new("onvif_srvd", true, NULL);
+
+    if(!mosq)
+    {
+        mosquitto_lib_cleanup();
+    }
+
+    //mosquitto_publish_callback_set(mosq, on_publish);
+    mosquitto_connect(mosq, "localhost", 1883, 60);
+
+    size_t size = strlen(msg);
+
+    publish_to_watchman(mosq, size, msg);
+
+    mosquitto_destroy(mosq);
+}
 
 std::string ServiceContext::get_time_zone() const
 {

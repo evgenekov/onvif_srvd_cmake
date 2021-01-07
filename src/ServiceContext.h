@@ -8,6 +8,7 @@
 
 #include "soapH.h"
 #include "eth_dev_param.h"
+#include "mosquitto_hander.h"
 
 
 
@@ -156,6 +157,8 @@ class ServiceContext
 
 
         std::vector<Eth_Dev_Param> eth_ifs; //ethernet interfaces
+        struct mosquitto *mosq; //Mosquitto service
+        void SendMosquittoMsg(const char* msg);
 
         std::string  get_time_zone() const;
 
