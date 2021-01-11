@@ -50,12 +50,13 @@ CXX              ?= g++
 # example:
 # make WSSE_ON=1 all
 ifdef WSSE_ON
-CXXFLAGS        += -DWITH_OPENSSL -lssl -lcrypto -lz
+CXXFLAGS        += -DWITH_DOM -DWITH_OPENSSL -lssl -lcrypto -lz
 
 WSSE_SOURCES     = $(GSOAP_PLUGIN_DIR)/wsseapi.c \
                    $(GSOAP_PLUGIN_DIR)/mecevp.c  \
                    $(GSOAP_PLUGIN_DIR)/smdevp.c  \
-                   $(GSOAP_PLUGIN_DIR)/wsaapi.c
+                   $(GSOAP_PLUGIN_DIR)/wsaapi.c  \
+                   $(GSOAP_CUSTOM_DIR)/struct_timeval.c
 
 WSSE_IMPORT      = echo '\#import "wsse.h" ' >> $@
 else
