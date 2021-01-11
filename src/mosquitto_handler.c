@@ -38,7 +38,7 @@ uint8_t publish_to_watchman(struct mosquitto *mosq_, int payloadLen, const char*
     DEBUG_MSG("ErrorNo: %d\n", errorNo);
 #endif
     
-    return mosquitto_publish(mosq_, NULL, "watchman", payloadLen, payload, 0, false);
+    return mosquitto_publish(mosq_, NULL, "watchman_command_json", payloadLen, payload, 0, false);
 }
 
     

@@ -561,7 +561,7 @@ int MediaBindingService::GetStreamUri(_trt__GetStreamUri *trt__GetStreamUri, _tr
 int MediaBindingService::StartMulticastStreaming(_trt__StartMulticastStreaming *trt__StartMulticastStreaming, _trt__StartMulticastStreamingResponse &trt__StartMulticastStreamingResponse)
 {
     ServiceContext* ctx = (ServiceContext*)this->soap->user;
-    static const char* msg = "Dummy Mosquitto Message to enable multicasting";
+    static const char* msg = "{\"start_multicast\": true}";
     ctx->SendMosquittoMsg(msg);
 
     SOAP_EMPTY_HANDLER(trt__StartMulticastStreaming, "Media");
@@ -572,7 +572,7 @@ int MediaBindingService::StartMulticastStreaming(_trt__StartMulticastStreaming *
 int MediaBindingService::StopMulticastStreaming(_trt__StopMulticastStreaming *trt__StopMulticastStreaming, _trt__StopMulticastStreamingResponse &trt__StopMulticastStreamingResponse)
 {
     ServiceContext* ctx = (ServiceContext*)this->soap->user;
-    static const char* msg = "Dummy Mosquitto Message to disable multicasting";
+    static const char* msg = "{\"start_multicast\": false}";
     ctx->SendMosquittoMsg(msg);
 
     SOAP_EMPTY_HANDLER(trt__StopMulticastStreaming, "Media");
