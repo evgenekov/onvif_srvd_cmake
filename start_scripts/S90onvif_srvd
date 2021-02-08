@@ -10,10 +10,10 @@ DAEMON_ARGS="--pid_file $PID_FILE"
 # ONVIF Device Service param (more details see help)
 DAEMON_ARGS="$DAEMON_ARGS --ifs enp5s0"
 DAEMON_ARGS="$DAEMON_ARGS --scope onvif://www.onvif.org/name/TPV-CAM"
-DAEMON_ARGS="$DAEMON_ARGS --scope onvif://www.onvif.org/location/Unknow"
+DAEMON_ARGS="$DAEMON_ARGS --scope onvif://www.onvif.org/location/Unknown"
 DAEMON_ARGS="$DAEMON_ARGS --scope onvif://www.onvif.org/Profile/Streaming"
 DAEMON_ARGS="$DAEMON_ARGS --scope onvif://www.onvif.org/Profile/S"
-DAEMON_ARGS="$DAEMON_ARGS --name RTSP --width 800 --height 600 --url rtsp://%s:554/unicast --type JPEG"
+DAEMON_ARGS="$DAEMON_ARGS --name RTSP --width 800 --height 600 --url rtsp://%s:554/unicast --type H264"
 
 
 
