@@ -18,11 +18,11 @@ ServiceContext::ServiceContext():
 
 
     //Device Information
-    manufacturer     ( "Manufacturer"   ),
-    model            ( "Model"          ),
-    firmware_version ( "FirmwareVersion"),
-    serial_number    ( "SerialNumber"   ),
-    hardware_id      ( "HardwareId"     ),
+    manufacturer     ( "Rinicom"        ),
+    model            ( "Watchman"       ),
+    firmware_version ( "0.0.1"          ),
+    serial_number    ( "000001"         ),
+    hardware_id      ( "000002"         ),
 
     //private
     tz_format(TZ_UTC_OFFSET)
