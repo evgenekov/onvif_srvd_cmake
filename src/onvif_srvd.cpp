@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <string.h>
 #include <getopt.h>
+#include <libconfig.h>
 
 
 #include "daemon.h"
@@ -248,7 +249,135 @@ void init_signals(void)
     signal(SIGHUP,  SIG_IGN);
 }
 
+const char* get_cfg_string(const char* setting, config_t config)
+{
+    const char *str;
+    if(!config_lookup_string(&config, setting, &str))
+    {
+        DEBUG_MSG("No value found in config for %s.\n", setting);
+        str = NULL;
+    }
+    return str;
+}
 
+int get_cfg_int(const char* setting, config_t config)
+{
+    int value;
+    if(!config_lookup_int(&config, setting, &value))
+    {
+        DEBUG_MSG("No value found in config for %s.\n", setting);
+        value = 0;
+    }
+    return value;
+}
+
+
+void processing_cfg()
+{
+    // New function to handle config file
+    config_t config;
+    config_init(&config);
+    const char *str;
+    int value;
+    StreamProfile  profile;
+
+    if(!config_read_file(&config, "../config.cfg"))
+    {
+        fprintf(stderr, "%s:%d - %s\n", config_error_file(&config), config_error_line(&config), config_error_text(&config));
+        config_destroy(&config);
+        DEBUG_MSG("Unable to load config file, exiting\n");
+        exit_if_not_daemonized(EXIT_FAILURE);
+    }
+
+    // Get Daemon info
+    str = get_cfg_string("pidFile", config);
+    if(str != NULL)
+        daemon_info.pid_file = str;
+    str = get_cfg_string("logFile", config);
+    if(str != NULL)
+        daemon_info.log_file = str;
+    DEBUG_MSG("Configured Daemon\n");
+
+    // ONVIF Service Options
+    value = get_cfg_int("port", config);
+    if(value)
+        service_ctx.port = value;
+    str = get_cfg_string("user", config);
+    if(str != NULL)
+        service_ctx.user = str;
+    str = get_cfg_string("password", config);
+    if(str != NULL)
+        service_ctx.password = str;
+    str = get_cfg_string("manufacturer", config);
+    if(str != NULL)
+        service_ctx.manufacturer = str;
+    str = get_cfg_string("model", config);
+    if(str != NULL)
+        service_ctx.model = str;
+    str = get_cfg_string("firmware_ver", config);
+    if(str != NULL)
+        service_ctx.firmware_version = str;
+    str = get_cfg_string("serial_num", config);
+    if(str != NULL)
+        service_ctx.serial_number = str;
+    str = get_cfg_string("hardware_id", config);
+    if(str != NULL)
+        service_ctx.hardware_id = str;
+
+    config_setting_t *setting;
+    setting = config_lookup(&config, "scopes");
+    if(setting != NULL)
+    {
+        int length = config_setting_length(setting);
+        int i;
+        for(i = 0; i < length; i++)
+        {
+            config_setting_t *scope = config_setting_get_elem(setting, i);
+            config_setting_lookup_string(scope, "onvifScope", &str);
+            service_ctx.scopes.push_back(str);
+        }
+    }
+    else
+    {
+        DEBUG_MSG("Unable to find scopes\n");
+    }
+
+    str = get_cfg_string("interfaces", config);
+    if(str != NULL)
+    {
+        service_ctx.eth_ifs.push_back(Eth_Dev_Param());
+        if( service_ctx.eth_ifs.back().open(str) != 0 )
+            daemon_error_exit("Can't open ethernet interface: %s - %m\n", str);
+    }
+
+    DEBUG_MSG("Configured Service\n");
+
+    // Onvif Media Profile
+    str = get_cfg_string("name", config);
+    if(str != NULL)
+        profile.set_name(str);
+    str = get_cfg_string("width", config);
+    if(str != NULL)
+        profile.set_width(str);
+    str = get_cfg_string("height", config);
+    if(str != NULL)
+        profile.set_height(str);
+    str = get_cfg_string("url", config);
+    if(str != NULL)
+        profile.set_url(str);
+    str = get_cfg_string("snapurl", config);
+    if(str != NULL)
+        profile.set_snapurl(str);
+    str = get_cfg_string("type", config);
+    if(str != NULL)
+        profile.set_type(str);
+
+    if( !service_ctx.add_profile(profile) )
+        daemon_error_exit("Can't add Profile: %s\n", service_ctx.get_cstr_err());
+
+    profile.clear();
+    DEBUG_MSG("configured Media Profile\n");
+}
 
 void processing_cmd(int argc, char *argv[])
 {
@@ -507,7 +636,19 @@ void init(void *data)
 
 int main(int argc, char *argv[])
 {
-    processing_cmd(argc, argv);
+    // Check to see if we have passed in any arguments, if we have use the existing command process
+    // Otherwise attempt to load the daemon config from file
+    if( argc > 1)
+    {
+        DEBUG_MSG("%d arguments, entering processing_cmd\n", argc);
+        processing_cmd(argc, argv);
+    }
+    else
+    {
+        DEBUG_MSG("processing_cfg\n");
+        processing_cfg();
+    }
+
     daemonize2(init, NULL);
 
     FOREACH_SERVICE(DECLARE_SERVICE, soap)

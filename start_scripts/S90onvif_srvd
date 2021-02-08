@@ -25,7 +25,8 @@ d_start()
     fi
 
     echo "Starting $DAEMON..."
-    $DAEMON_PATH/$DAEMON $DAEMON_ARGS && echo "$DAEMON started"
+#    $DAEMON_PATH/$DAEMON $DAEMON_ARGS && echo "$DAEMON started"
+    $DAEMON_PATH/$DAEMON && echo "$DAEMON started"s
 }
 
 

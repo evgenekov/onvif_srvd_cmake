@@ -36,7 +36,7 @@ CXXFLAGS         += -DDAEMON_NO_CLOSE_STDIO=$(DAEMON_NO_CLOSE_STDIO)
 
 CXXFLAGS         += -I$(COMMON_DIR)
 CXXFLAGS         += -I$(GENERATED_DIR)
-CXXFLAGS         += -I$(GSOAP_DIR) -I$(GSOAP_CUSTOM_DIR) -I$(GSOAP_PLUGIN_DIR) -I$(GSOAP_IMPORT_DIR)
+CXXFLAGS         += -I$(GSOAP_DIR) -I$(GSOAP_CUSTOM_DIR) -I$(GSOAP_PLUGIN_DIR) -I$(GSOAP_IMPORT_DIR) -I/usr/include/libconfig
 CXXFLAGS         += -std=c++11 -O2  -Wall  -pipe
 
 CXX              ?= g++
@@ -50,7 +50,7 @@ CXX              ?= g++
 # example:
 # make WSSE_ON=1 all
 ifdef WSSE_ON
-CXXFLAGS        += -DWITH_DOM -DWITH_OPENSSL -lssl -lcrypto -lz
+CXXFLAGS        += -DWITH_DOM -DWITH_OPENSSL -lssl -lcrypto -lz -lconfig
 
 WSSE_SOURCES     = $(GSOAP_PLUGIN_DIR)/wsseapi.c \
                    $(GSOAP_PLUGIN_DIR)/mecevp.c  \
