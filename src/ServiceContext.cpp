@@ -41,6 +41,7 @@ void ServiceContext::InitMqttComms()
         mosquitto_lib_cleanup();
     }
     mosquitto_connect(mosq, "localhost", 1883, 60);
+    mosquitto_loop_start(mosq);
 }
 
 
@@ -61,6 +62,8 @@ void ServiceContext::SendMqttMsg(const char* msg)
 void ServiceContext::CloseMqttComms()
 {
     DEBUG_MSG("\nClosing MQTT Comms\n");
+    mosquitto_disconnect(mosq);
+    mosquitto_loop_stop(mosq, 1);
     mosquitto_destroy(mosq);
 }
 
