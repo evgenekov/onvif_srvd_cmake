@@ -280,6 +280,7 @@ void processing_cfg()
     const char *str;
     int value;
     StreamProfile  profile;
+    config_setting_t *setting;
 
     if(!config_read_file(&config, "../config.cfg"))
     {
@@ -323,8 +324,6 @@ void processing_cfg()
     str = get_cfg_string("hardware_id", config);
     if(str != NULL)
         service_ctx.hardware_id = str;
-
-    config_setting_t *setting;
     setting = config_lookup(&config, "scopes");
     if(setting != NULL)
     {
@@ -341,7 +340,6 @@ void processing_cfg()
     {
         DEBUG_MSG("Unable to find scopes\n");
     }
-
     str = get_cfg_string("interfaces", config);
     if(str != NULL)
     {
@@ -349,6 +347,10 @@ void processing_cfg()
         if( service_ctx.eth_ifs.back().open(str) != 0 )
             daemon_error_exit("Can't open ethernet interface: %s - %m\n", str);
     }
+    str = get_cfg_string("tz_format", config);
+    if(str != NULL)
+        if( !service_ctx.set_tz_format(str) )
+            daemon_error_exit("Can't set tz_format: %s\n", service_ctx.get_cstr_err());    
 
     DEBUG_MSG("Configured Service\n");
 
