@@ -562,7 +562,7 @@ int MediaBindingService::StartMulticastStreaming(_trt__StartMulticastStreaming *
 {
     ServiceContext* ctx = (ServiceContext*)this->soap->user;
     static const char* msg = "{\"start_multicast\": true}";
-    ctx->SendMosquittoMsg(msg);
+    ctx->SendMqttMsg(msg);
 
     SOAP_EMPTY_HANDLER(trt__StartMulticastStreaming, "Media");
 }
@@ -573,7 +573,7 @@ int MediaBindingService::StopMulticastStreaming(_trt__StopMulticastStreaming *tr
 {
     ServiceContext* ctx = (ServiceContext*)this->soap->user;
     static const char* msg = "{\"start_multicast\": false}";
-    ctx->SendMosquittoMsg(msg);
+    ctx->SendMqttMsg(msg);
 
     SOAP_EMPTY_HANDLER(trt__StopMulticastStreaming, "Media");
 }

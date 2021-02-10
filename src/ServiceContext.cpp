@@ -27,28 +27,44 @@ ServiceContext::ServiceContext():
     //private
     tz_format(TZ_UTC_OFFSET)
 {
+    InitMqttComms();
 }
 
-void ServiceContext::SendMosquittoMsg(const char* msg)
+
+
+void ServiceContext::InitMqttComms()
 {
-    mosquitto_lib_init();
-
-    mosq = mosquitto_new("onvif_srvd", true, NULL);
-
+    DEBUG_MSG("\nInitialsing MQTT Comms\n");
+    mosq = mosquitto_new("onvif_svrd", true, NULL);
     if(!mosq)
     {
         mosquitto_lib_cleanup();
     }
-
-    //mosquitto_publish_callback_set(mosq, on_publish);
     mosquitto_connect(mosq, "localhost", 1883, 60);
+}
 
+
+
+void ServiceContext::SendMqttMsg(const char* msg)
+{
     size_t size = strlen(msg);
+#ifdef  DEBUG
+    DEBUG_MSG("\nSend message to subscriptions:\npayloadLen: %d\npayload: %s\n", size, msg);
+    int errorNo = mosquitto_publish(mosq, NULL, "Test", size, msg, 0, false);
+    DEBUG_MSG("ErrorNo: %d\n", errorNo);
+#endif
+    mosquitto_publish(mosq, NULL, "watchman_command_json", size, msg, 0, false);
+}
 
-    publish_to_watchman(mosq, size, msg);
 
+
+void ServiceContext::CloseMqttComms()
+{
+    DEBUG_MSG("\nClosing MQTT Comms\n");
     mosquitto_destroy(mosq);
 }
+
+
 
 std::string ServiceContext::get_time_zone() const
 {
