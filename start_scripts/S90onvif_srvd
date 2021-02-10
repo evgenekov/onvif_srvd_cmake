@@ -2,7 +2,7 @@
 
 DAEMON=../onvif_srvd_debug
 DAEMON_PATH=.
-PID_FILE=$DAEMON.pid
+PID_FILE=onvif_srvd_debug.pid
 
 DAEMON_ARGS="--pid_file $PID_FILE"
 
@@ -26,7 +26,7 @@ d_start()
 
     echo "Starting $DAEMON..."
 #    $DAEMON_PATH/$DAEMON $DAEMON_ARGS && echo "$DAEMON started"
-    $DAEMON_PATH/$DAEMON && echo "$DAEMON started"s
+    $DAEMON_PATH/$DAEMON && echo "$DAEMON started"
 }
 
 
