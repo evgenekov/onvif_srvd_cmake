@@ -29,7 +29,7 @@ void init_mosquitto(struct mosquitto *mosq)
 
 }
 
-uint8_t publish_to_watchman(struct mosquitto *mosq_, int payloadLen, const char* payload)
+int publish_to_watchman(struct mosquitto *mosq_, int payloadLen, const char* payload)
 {
 #ifdef  DEBUG
     DEBUG_MSG("\nSend message to test:\npayloadLen: %d\npayload: %s\n", payloadLen, payload);
