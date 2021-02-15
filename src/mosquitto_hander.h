@@ -22,7 +22,7 @@
 
 // Function Definitions
 void init_mosquitto(struct mosquitto *mosq);
-uint8_t publish_to_watchman(struct mosquitto *mosq_, int payloadLen, const char* payload);
+int publish_to_watchman(struct mosquitto *mosq_, int payloadLen, const char* payload);
 void on_publish();
 
 
