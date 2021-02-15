@@ -1,5 +1,14 @@
 image: gcc
 
+variables:
+  DOCKER_DRIVER: overlay2
+
+cache:
+    key: one-key-to-rull-them-all
+    paths:
+        - gsoap-2.8/
+        - generated/
+
 before_script:
     - apt update && apt -y install flex bison byacc make m4 openssl libssl-dev zlib1g-dev libcrypto++6 libconfig-dev libmosquitto-dev
 
@@ -9,6 +18,6 @@ build:
         - make WSSE_ON=1
     artifacts:
         paths:
-            - start_scripts
+            - start_scripts/
             - onvif_svrd
             - onvif_svrd_debug
