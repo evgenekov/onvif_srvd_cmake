@@ -1,7 +1,7 @@
 image: gcc
 
 before_script:
-    - apt update && apt -y install flex bison byacc make m4 openssl libssl-dev zlib1g-dev libcrypto++6 libconfig-dev
+    - apt update && apt -y install flex bison byacc make m4 openssl libssl-dev zlib1g-dev libcrypto++6 libconfig-dev libmosquitto-dev
 
 build:
     stage: build    
