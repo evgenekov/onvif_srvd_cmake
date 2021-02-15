@@ -1,8 +1,10 @@
 image: gcc
 
+before_script:
+    - apt-update && apt -y install flex bison byacc make m4 openssl libssl-dev zlib1g-dev libcrypto++6
+
 build:
-    stage: build
-        - apt-update && apt -y install flex bison byacc make m4 openssl libssl-dev zlib1g-dev libcrypto++6
+    stage: build    
     script:
         - make WSSE_ON=1
     artifacts:
@@ -10,4 +12,3 @@ build:
             - start_scripts
             - onvif_svrd
             - onvif_svrd_debug
-
