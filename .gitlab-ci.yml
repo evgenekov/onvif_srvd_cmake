@@ -19,5 +19,5 @@ build:
     artifacts:
         paths:
             - start_scripts/
-            - onvif_svrd
-            - onvif_svrd_debug
+            - onvif_srvd
+            - onvif_srvd_debug
