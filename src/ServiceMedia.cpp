@@ -367,14 +367,42 @@ int MediaBindingService::GetAudioDecoderConfiguration(_trt__GetAudioDecoderConfi
 
 int MediaBindingService::GetCompatibleVideoEncoderConfigurations(_trt__GetCompatibleVideoEncoderConfigurations *trt__GetCompatibleVideoEncoderConfigurations, _trt__GetCompatibleVideoEncoderConfigurationsResponse &trt__GetCompatibleVideoEncoderConfigurationsResponse)
 {
-    SOAP_EMPTY_HANDLER(trt__GetCompatibleVideoEncoderConfigurations, "Media");
+    DEBUG_MSG("Media: %s   for profile:%s\n", __FUNCTION__, trt__GetCompatibleVideoEncoderConfigurations->ProfileToken.c_str());
+
+    int ret = SOAP_FAULT;
+
+    ServiceContext* ctx = (ServiceContext*)this->soap->user;
+    auto profiles       = ctx->get_profiles();
+    auto it             = profiles.find(trt__GetCompatibleVideoEncoderConfigurations->ProfileToken);    
+    
+    if( it != profiles.end() )
+    {
+        trt__GetCompatibleVideoEncoderConfigurationsResponse.Configurations.push_back(it->second.get_profile(this->soap)->VideoEncoderConfiguration);
+        ret = SOAP_OK;
+    }    
+    
+    return ret;
 }
 
 
 
 int MediaBindingService::GetCompatibleVideoSourceConfigurations(_trt__GetCompatibleVideoSourceConfigurations *trt__GetCompatibleVideoSourceConfigurations, _trt__GetCompatibleVideoSourceConfigurationsResponse &trt__GetCompatibleVideoSourceConfigurationsResponse)
 {
-    SOAP_EMPTY_HANDLER(trt__GetCompatibleVideoSourceConfigurations, "Media");
+    DEBUG_MSG("Media: %s   for profile:%s\n", __FUNCTION__, trt__GetCompatibleVideoSourceConfigurations->ProfileToken.c_str());
+
+    int ret = SOAP_FAULT;
+
+    ServiceContext* ctx = (ServiceContext*)this->soap->user;
+    auto profiles       = ctx->get_profiles();
+    auto it             = profiles.find(trt__GetCompatibleVideoSourceConfigurations->ProfileToken);    
+    
+    if( it != profiles.end() )
+    {
+        trt__GetCompatibleVideoSourceConfigurationsResponse.Configurations.push_back(it->second.get_profile(this->soap)->VideoSourceConfiguration);
+        ret = SOAP_OK;
+    }    
+    
+    return ret;
 }
 
 
