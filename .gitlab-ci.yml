@@ -21,3 +21,5 @@ build:
             - start_scripts/
             - onvif_srvd
             - onvif_srvd_debug
+    rules:
+        - when: manual  
