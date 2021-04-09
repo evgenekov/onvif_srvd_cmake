@@ -281,8 +281,9 @@ void processing_cfg()
     int value;
     StreamProfile  profile;
     config_setting_t *setting;
+    config_setting_t *profiles;
 
-    if(!config_read_file(&config, "../config.cfg"))
+    if(!config_read_file(&config, "config.cfg"))
     {
         fprintf(stderr, "%s:%d - %s\n", config_error_file(&config), config_error_line(&config), config_error_text(&config));
         config_destroy(&config);
@@ -354,31 +355,45 @@ void processing_cfg()
 
     DEBUG_MSG("Configured Service\n");
 
-    // Onvif Media Profile
-    str = get_cfg_string("name", config);
-    if(str != NULL)
-        profile.set_name(str);
-    str = get_cfg_string("width", config);
-    if(str != NULL)
-        profile.set_width(str);
-    str = get_cfg_string("height", config);
-    if(str != NULL)
-        profile.set_height(str);
-    str = get_cfg_string("url", config);
-    if(str != NULL)
-        profile.set_url(str);
-    str = get_cfg_string("snapurl", config);
-    if(str != NULL)
-        profile.set_snapurl(str);
-    str = get_cfg_string("type", config);
-    if(str != NULL)
-        profile.set_type(str);
+    // Onvif Media Profiles
+    profiles = config_lookup(&config, "profiles");
+    if(profiles != NULL)
+    {
+        int length = config_setting_length(profiles);
+        int i;
+        for(i = 0; i < length; i++)
+        {
+            config_setting_t *profileElem = config_setting_get_elem(profiles, i);
+            config_setting_lookup_string(profileElem, "name", &str);
+            if(str != NULL)
+                profile.set_name(str);
+            config_setting_lookup_string(profileElem, "width", &str);
+            if(str != NULL)
+                profile.set_width(str);
+            config_setting_lookup_string(profileElem, "height", &str);
+            if(str != NULL)
+                profile.set_height(str);
+            config_setting_lookup_string(profileElem, "url", &str);
+            if(str != NULL)
+                profile.set_url(str);       
+            config_setting_lookup_string(profileElem, "snapurl", &str);
+            if(str != NULL)
+                profile.set_snapurl(str); 
+            config_setting_lookup_string(profileElem, "type", &str);
+            if(str != NULL)
+                profile.set_type(str);
 
-    if( !service_ctx.add_profile(profile) )
-        daemon_error_exit("Can't add Profile: %s\n", service_ctx.get_cstr_err());
+            if( !service_ctx.add_profile(profile) )
+                daemon_error_exit("Can't add Profile: %s\n", service_ctx.get_cstr_err());
 
-    profile.clear();
-    DEBUG_MSG("configured Media Profile\n");
+            DEBUG_MSG("configured Media Profile %s\n", profile.get_name().c_str());    
+            profile.clear();
+        }
+    }
+    else
+    {
+        DEBUG_MSG("Unable to find streaming profiles\n");
+    }
 }
 
 void processing_cmd(int argc, char *argv[])
