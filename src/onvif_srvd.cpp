@@ -283,7 +283,7 @@ void processing_cfg()
     config_setting_t *setting;
     config_setting_t *profiles;
 
-    if(!config_read_file(&config, "config.cfg"))
+    if(!config_read_file(&config, "/etc/onvif_srvd/config.cfg"))
     {
         fprintf(stderr, "%s:%d - %s\n", config_error_file(&config), config_error_line(&config), config_error_text(&config));
         config_destroy(&config);
