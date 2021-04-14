@@ -29,6 +29,7 @@ WSDD_DIR=$BUILD_DIR/wsdd
 mkdir -p $OUT_DIR $BUILD_DIR
 
 echo "Build Onvif_Srvd"
+make clean
 make WSSE_ON=1
 
 echo "Build WSDD"
@@ -62,10 +63,18 @@ echo "Depends: flex,bison,byacc,make,m4,openssl,libssl-dev,zlib1g-dev,libcrypto+
 
 echo "#!/bin/bash" > $DEB_DIR/DEBIAN/postinst
 echo "ldconfig" >> $DEB_DIR/DEBIAN/postinst
-echo "systemctl enable onvif_srvd.service" >> $DEB_DIR/DEBIAN/postinst
-echo "systemctl start onvif_srvd.service" >> $DEB_DIR/DEBIAN/postinst
-chmod +x $DEB_DIR/DEBIAN/postinst
 
+echo "echo \"Please, select a network interface:\""  >> $DEB_DIR/DEBIAN/postinst
+echo "cd /sys/class/net && select foo in *; do interface=\$foo;  break; done"  >> $DEB_DIR/DEBIAN/postinst
+echo "echo \$interface selected"  >> $DEB_DIR/DEBIAN/postinst
+echo "sed -i \"s/eth0/\$interface/g\" /etc/onvif_srvd/config.cfg"  >> $DEB_DIR/DEBIAN/postinst
+echo "sed -i \"s/eth0/\$interface/g\" /lib/systemd/system/wsdd.service"  >> $DEB_DIR/DEBIAN/postinst
+
+echo "systemctl enable onvif_srvd.service" >> $DEB_DIR/DEBIAN/postinst
+#echo "systemctl start onvif_srvd.service" >> $DEB_DIR/DEBIAN/postinst
+echo "systemctl enable wsdd.service" >> $DEB_DIR/DEBIAN/postinst
+#echo "systemctl start wsdd.service" >> $DEB_DIR/DEBIAN/postinst
+chmod +x $DEB_DIR/DEBIAN/postinst
 
 cp -a $OUT_DIR/config.cfg $ETC_DIR/onvif_srvd/
 cp -a $OUT_DIR/onvif_srvd $BIN_DIR/
