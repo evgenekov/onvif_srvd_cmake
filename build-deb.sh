@@ -23,11 +23,34 @@ ETC_DIR=$DEB_DIR/etc
 LIB_DIR=$DEB_DIR/lib
 BIN_DIR=$DEB_DIR/usr/sbin
 
+WSDD_DIR=$BUILD_DIR/wsdd
+
 
 mkdir -p $OUT_DIR $BUILD_DIR
 
+echo "Build Onvif_Srvd"
 make WSSE_ON=1
 
+echo "Build WSDD"
+cd $OUT_DIR/wsdd
+if [ ! -d $OUT_DIR/wsdd/SDK ]
+then
+    echo "No gSOAP Files in repo, copy and build"
+    cp -r $OUT_DIR/SDK $OUT_DIR/wsdd
+    cp -r $OUT_DIR/gsoap-2.8 $OUT_DIR/wsdd
+    make
+else
+    echo "Files already there, clean up wsdd directory and send files again"
+    rm -r $OUT_DIR/wsdd/SDK
+    rm -r $OUT_DIR/wsdd/gsoap-2.8
+    make clean
+    cp -r $OUT_DIR/SDK $OUT_DIR/wsdd
+    cp -r $OUT_DIR/gsoap-2.8 $OUT_DIR/wsdd    
+    make
+fi
+
+echo "Create .deb Package"
+cd $OUT_DIR
 mkdir -p $DEB_DIR/DEBIAN $BIN_DIR $ETC_DIR/onvif_srvd/ $LIB_DIR/systemd/system/
 
 echo "Package: onvif-srvd" > $DEB_DIR/DEBIAN/control
@@ -43,21 +66,18 @@ echo "systemctl enable onvif_srvd.service" >> $DEB_DIR/DEBIAN/postinst
 echo "systemctl start onvif_srvd.service" >> $DEB_DIR/DEBIAN/postinst
 chmod +x $DEB_DIR/DEBIAN/postinst
 
-echo $OUT_DIR 
-echo `pwd`
-
 
 cp -a $OUT_DIR/config.cfg $ETC_DIR/onvif_srvd/
-
 cp -a $OUT_DIR/onvif_srvd $BIN_DIR/
-
 cp -a $OUT_DIR/start_scripts/*.service $LIB_DIR/systemd/system/
 
+cp -a $OUT_DIR/wsdd/wsdd $BIN_DIR/
+cp -a $OUT_DIR/wsdd/start_scripts/*.service $LIB_DIR/systemd/system/
 
-cd $OUT_DIR
+
 dpkg-deb --build $DEB_DIR
 cd $CURRENT_DIR
 
 echo "Done! You may remove: "
 echo $DEB_DIR
-echo $BUILD_DIR
+
