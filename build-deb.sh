@@ -69,12 +69,18 @@ echo "cd /sys/class/net && select foo in *; do interface=\$foo;  break; done"  >
 echo "echo \$interface selected"  >> $DEB_DIR/DEBIAN/postinst
 echo "sed -i \"s/eth0/\$interface/g\" /etc/onvif_srvd/config.cfg"  >> $DEB_DIR/DEBIAN/postinst
 echo "sed -i \"s/eth0/\$interface/g\" /lib/systemd/system/wsdd.service"  >> $DEB_DIR/DEBIAN/postinst
-
+echo "systemctl daemon-reload" >> $DEB_DIR/DEBIAN/postinst
 echo "systemctl enable onvif_srvd.service" >> $DEB_DIR/DEBIAN/postinst
-#echo "systemctl start onvif_srvd.service" >> $DEB_DIR/DEBIAN/postinst
+echo "systemctl start onvif_srvd.service" >> $DEB_DIR/DEBIAN/postinst
 echo "systemctl enable wsdd.service" >> $DEB_DIR/DEBIAN/postinst
-#echo "systemctl start wsdd.service" >> $DEB_DIR/DEBIAN/postinst
+echo "systemctl start wsdd.service" >> $DEB_DIR/DEBIAN/postinst
 chmod +x $DEB_DIR/DEBIAN/postinst
+
+echo "#!/bin/bash" > $DEB_DIR/DEBIAN/postrm
+echo "systemctl stop onvif_srvd.service" >> $DEB_DIR/DEBIAN/postrm
+echo "systemctl stop wsdd.service" >> $DEB_DIR/DEBIAN/postrm
+echo "systemctl daemon-reload" >> $DEB_DIR/DEBIAN/postrm
+chmod +x $DEB_DIR/DEBIAN/postrm
 
 cp -a $OUT_DIR/config.cfg $ETC_DIR/onvif_srvd/
 cp -a $OUT_DIR/onvif_srvd $BIN_DIR/
