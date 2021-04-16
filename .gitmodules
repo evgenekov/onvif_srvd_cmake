@@ -1,3 +1,3 @@
 [submodule "wsdd"]
 	path = wsdd
-	url = ../wsdd
+	url = ../wsdd.git
