@@ -2,7 +2,8 @@ image: gcc
 
 variables:
   DOCKER_DRIVER: overlay2
-
+  GIT_SUBMODULE_STRATEGY: recursive
+ 
 cache:
     key: one-key-to-rull-them-all
     paths:
@@ -11,7 +12,6 @@ cache:
 
 before_script:
     - apt update && apt -y install flex bison byacc make m4 openssl libssl-dev zlib1g-dev libcrypto++6 libconfig-dev libmosquitto-dev
-    - git submodule update --init --recursive
 
 build:
     stage: build    
