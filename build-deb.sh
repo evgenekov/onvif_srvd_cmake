@@ -59,7 +59,7 @@ echo "Version:" $SOFTWARE_VERSION >> $DEB_DIR/DEBIAN/control
 echo "Maintainer: Niall Mullins <niall.mullins@rinicom.com>" >> $DEB_DIR/DEBIAN/control
 echo "Architecture: amd64" >> $DEB_DIR/DEBIAN/control
 echo "Description: Onvif Daemon" >> $DEB_DIR/DEBIAN/control
-echo "Depends: flex,bison,byacc,make,m4,openssl,libssl-dev,zlib1g-dev,libcrypto++6" >> $DEB_DIR/DEBIAN/control
+echo "Depends: flex,bison,byacc,make,m4,openssl,libssl-dev,zlib1g-dev,libcrypto++8" >> $DEB_DIR/DEBIAN/control
 
 echo "#!/bin/bash" > $DEB_DIR/DEBIAN/postinst
 echo "ldconfig" >> $DEB_DIR/DEBIAN/postinst
