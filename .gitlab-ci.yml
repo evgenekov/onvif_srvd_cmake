@@ -11,15 +11,17 @@ cache:
 
 before_script:
     - apt update && apt -y install flex bison byacc make m4 openssl libssl-dev zlib1g-dev libcrypto++6 libconfig-dev libmosquitto-dev
+    - git submodule update --init --recursive
 
 build:
     stage: build    
     script:
-        - make WSSE_ON=1
+        - ./build-deb
     artifacts:
         paths:
             - start_scripts/
             - onvif_srvd
             - onvif_srvd_debug
+            - onvif-srvd-*.deb
     rules:
         - when: manual  
