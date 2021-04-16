@@ -8,7 +8,7 @@ DAEMON_NO_CHDIR       = 1
 DAEMON_NO_CLOSE_STDIO = 0
 
 
-GSOAP_VERSION     = 2.8.111
+GSOAP_VERSION     = 2.8.113
 GSOAP_INSTALL_DIR = ./gsoap-2.8
 GSOAP_DIR         = $(GSOAP_INSTALL_DIR)/gsoap
 GSOAP_CUSTOM_DIR  = $(GSOAP_DIR)/custom
@@ -261,7 +261,7 @@ define build_gsoap
     # get archive
     if [ ! -f SDK/gsoap.zip ]; then \
         mkdir -p SDK; \
-        wget -O ./SDK/gsoap.zip.tmp "https://sourceforge.net/projects/gsoap2/files/gsoap-2.8/gsoap_$(GSOAP_VERSION).zip/download"  && \
+        wget -O ./SDK/gsoap.zip.tmp "https://sourceforge.net/projects/gsoap2/files/gsoap_$(GSOAP_VERSION).zip/download"  && \
         mv ./SDK/gsoap.zip.tmp ./SDK/gsoap.zip; \
     fi
 
@@ -274,6 +274,9 @@ define build_gsoap
     if [ ! -f $(SOAPCPP2) ] || [ ! -f $(WSDL2H) ]; then \
          cd $(GSOAP_INSTALL_DIR); \
          ./configure $(GSOAP_CONFIGURE) && \
+         ls gsoap/ && \
+         sed -i 's/err = strerror_r(err, soap->msgbuf, sizeof(soap->msgbuf)); \/\* XSI-compliant \*\//\/\/err = strerror_r(err, soap->msgbuf, sizeof(soap->msgbuf)); \/\* XSI-compliant \*\//g' ./gsoap/stdsoap2.cpp && \
+         sed -i 's/err = strerror_r(err, soap->msgbuf, sizeof(soap->msgbuf)); \/\* XSI-compliant \*\//\/\/err = strerror_r(err, soap->msgbuf, sizeof(soap->msgbuf)); \/\* XSI-compliant \*\//g' ./gsoap/stdsoap2.c && \
          make -j1; \
          cd ..;\
     fi
