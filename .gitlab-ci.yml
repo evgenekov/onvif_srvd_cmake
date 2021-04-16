@@ -16,7 +16,7 @@ before_script:
 build:
     stage: build    
     script:
-        - ./build-deb
+        - ./build-deb.sh
     artifacts:
         paths:
             - start_scripts/
