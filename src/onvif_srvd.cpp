@@ -10,6 +10,7 @@
 #include "daemon.h"
 #include "smacros.h"
 #include "ServiceContext.h"
+#include "rtsp-streams.h"
 
 // ---- gsoap ----
 #include "DeviceBinding.nsmap"
@@ -666,9 +667,13 @@ int main(int argc, char *argv[])
         processing_cfg();
     }
 
+    
+    
     daemonize2(init, NULL);
 
     FOREACH_SERVICE(DECLARE_SERVICE, soap)
+    
+    int stream = InitRtspStream("\"( -v videotestsrc is-live=true ! application/x-rtp,clock-rate=90000,payload=96 ! rtph264depay ! rtph264pay name=pay0 pt=96 )\"");
 
     while( true )
     {
