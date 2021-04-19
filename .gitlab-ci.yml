@@ -2,7 +2,8 @@ image: gcc
 
 variables:
   DOCKER_DRIVER: overlay2
-
+  GIT_SUBMODULE_STRATEGY: recursive
+ 
 cache:
     key: one-key-to-rull-them-all
     paths:
@@ -10,16 +11,17 @@ cache:
         - generated/
 
 before_script:
-    - apt update && apt -y install flex bison byacc make m4 openssl libssl-dev zlib1g-dev libcrypto++6 libconfig-dev libmosquitto-dev
+    - apt update && apt -y install flex bison byacc make m4 openssl libssl-dev zlib1g-dev libcrypto++8 libconfig-dev libmosquitto-dev
 
 build:
     stage: build    
     script:
-        - make WSSE_ON=1
+        - ./build-deb.sh
     artifacts:
         paths:
             - start_scripts/
             - onvif_srvd
             - onvif_srvd_debug
+            - onvif-srvd-*.deb
     rules:
         - when: manual  
