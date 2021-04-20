@@ -7,10 +7,11 @@
 #include <libconfig.h>
 
 
+
 #include "daemon.h"
 #include "smacros.h"
 #include "ServiceContext.h"
-#include "rtsp-streams.h"
+#include "rtsp-streams.hpp"
 
 // ---- gsoap ----
 #include "DeviceBinding.nsmap"
@@ -673,17 +674,22 @@ int main(int argc, char *argv[])
 
     FOREACH_SERVICE(DECLARE_SERVICE, soap)
     
-    int stream = InitRtspStream("\"( -v videotestsrc is-live=true ! application/x-rtp,clock-rate=90000,payload=96 ! rtph264depay ! rtph264pay name=pay0 pt=96 )\"");
+    RTSPStream * streamPtr = new RTSPStream();
+    RTSPStream * otherstreamPtr = new RTSPStream();
+    
+    
+    std::thread th1(&RTSPStream::InitRtspStream, streamPtr, "\"( videotestsrc pattern=ball ! x264enc ! rtph264pay pt=96 name=pay0 )\"", "8554", "/left");
+    std::thread th2(&RTSPStream::InitRtspStream, otherstreamPtr, "\"( videotestsrc ! x264enc ! rtph264pay pt=96 name=pay0 )\"", "554", "/right");    
 
     while( true )
     {
         // wait new client
         if( !soap_valid_socket(soap_accept(soap)) )
         {
+            DEBUG_MSG("SOAP Valid Socket\n");
             soap_stream_fault(soap, std::cerr);
             return EXIT_FAILURE;
         }
-
 
         // process service
         if( soap_begin_serve(soap) )

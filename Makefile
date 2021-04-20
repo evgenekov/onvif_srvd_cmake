@@ -37,7 +37,7 @@ CXXFLAGS         += -DDAEMON_NO_CLOSE_STDIO=$(DAEMON_NO_CLOSE_STDIO)
 CXXFLAGS         += -I$(COMMON_DIR)
 CXXFLAGS         += -I$(GENERATED_DIR)
 CXXFLAGS         += -I$(GSOAP_DIR) -I$(GSOAP_CUSTOM_DIR) -I$(GSOAP_PLUGIN_DIR) -I$(GSOAP_IMPORT_DIR) -I/usr/include/libconfig  -I/usr/include/gstreamer-1.0 -I/usr/include/x86_64-linux-gnu -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include
-CXXFLAGS         += -std=c++11 -O2  -Wall  -pipe
+CXXFLAGS         += -std=c++17 -O2  -Wall  -pipe
 
 CXX              ?= g++
 
@@ -50,7 +50,7 @@ CXX              ?= g++
 # example:
 # make WSSE_ON=1 all
 ifdef WSSE_ON
-CXXFLAGS        += -DWITH_DOM -DWITH_OPENSSL -lssl -lcrypto -lz -lconfig -lgstrtspserver-1.0 -lgstbase-1.0 -lgstreamer-1.0 -lgobject-2.0 -lglib-2.0
+CXXFLAGS        += -DWITH_DOM -DWITH_OPENSSL -lssl -lcrypto -lz -lconfig -lgstrtspserver-1.0 -lgstbase-1.0 -lgstreamer-1.0 -lgobject-2.0 -lglib-2.0 -lpthread
 
 WSSE_SOURCES     = $(GSOAP_PLUGIN_DIR)/wsseapi.c \
                    $(GSOAP_PLUGIN_DIR)/mecevp.c  \
@@ -97,7 +97,7 @@ SOURCES  = $(COMMON_DIR)/daemon.c                 \
            $(SOAP_SERVICE_SRC)                    \
            $(WSSE_SOURCES)                        \
            $(COMMON_DIR)/mosquitto_handler.c      \
-           $(COMMON_DIR)/rtsp-streams.c
+           $(COMMON_DIR)/rtsp-streams.cpp
 
 
 
