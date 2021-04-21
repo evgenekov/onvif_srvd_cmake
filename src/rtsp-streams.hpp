@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <utility>
 #include <thread>
+#include "logger.hpp"
 
 #include <gst/gst.h>
 #include <gst/rtsp-server/rtsp-server.h>

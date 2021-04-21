@@ -12,6 +12,7 @@
 #include "smacros.h"
 #include "ServiceContext.h"
 #include "rtsp-streams.hpp"
+#include "logger.hpp"
 
 // ---- gsoap ----
 #include "DeviceBinding.nsmap"
@@ -219,8 +220,6 @@ ServiceContext service_ctx;
 
 
 
-
-
 void daemon_exit_handler(int sig)
 {
     //Here we release resources
@@ -292,14 +291,33 @@ void processing_cfg()
         DEBUG_MSG("Unable to load config file, exiting\n");
         exit_if_not_daemonized(EXIT_FAILURE);
     }
-
+    
+    // Defaults
+    daemon_info.logLevel = "critical";
+    daemon_info.logFile = "";
+    daemon_info.logFileSizeMb = 5;
+    daemon_info.logFileCount = 10;
+    daemon_info.logAsync = false;
+    
     // Get Daemon info
     str = get_cfg_string("pidFile", config);
     if(str != NULL)
         daemon_info.pid_file = str;
-    str = get_cfg_string("logFile", config);
+    str = get_cfg_string("log_level", config);
     if(str != NULL)
-        daemon_info.log_file = str;
+        daemon_info.logLevel = str;
+    str = get_cfg_string("log_file", config);
+    if(str != NULL)
+        daemon_info.logFile = str;
+    value = get_cfg_int("log_file_size_mb", config);
+    if(value)
+        daemon_info.logFileSizeMb = value;
+    value = get_cfg_int("log_file_count", config);
+    if(value)
+        daemon_info.logFileCount = value;
+    str = get_cfg_string("log_async", config);
+    if(str != NULL)
+        daemon_info.logAsync = str;    
     DEBUG_MSG("Configured Daemon\n");
 
     // ONVIF Service Options
@@ -668,7 +686,8 @@ int main(int argc, char *argv[])
         processing_cfg();
     }
 
-    
+    arms::logger::setupLogging(daemon_info.logLevel, daemon_info.logAsync, daemon_info.logFile, daemon_info.logFileSizeMb, daemon_info.logFileCount);
+    arms::log<arms::LOG_INFO>("Logging Enabled");
     
     daemonize2(init, NULL);
 
@@ -686,7 +705,7 @@ int main(int argc, char *argv[])
         // wait new client
         if( !soap_valid_socket(soap_accept(soap)) )
         {
-            DEBUG_MSG("SOAP Valid Socket\n");
+            arms::log<arms::LOG_DEBUG>("SOAP Valid Socket");
             soap_stream_fault(soap, std::cerr);
             return EXIT_FAILURE;
         }
@@ -699,7 +718,7 @@ int main(int argc, char *argv[])
         FOREACH_SERVICE(DISPATCH_SERVICE, soap)
         else
         {
-            DEBUG_MSG("Unknown service\n");
+            arms::log<arms::LOG_DEBUG>("Unknown service");
         }
 
         soap_destroy(soap); // delete managed C++ objects

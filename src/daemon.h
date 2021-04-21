@@ -78,6 +78,12 @@ struct daemon_info_t
     const char *pid_file;
     const char *log_file;
     const char *cmd_pipe;
+    
+    const char * logLevel;
+    const char * logFile ;
+    size_t logFileSizeMb;
+    size_t logFileCount;
+    bool logAsync;    
 };
 
 

@@ -18,6 +18,7 @@
  */
 
 #include "rtsp-streams.hpp"
+#include "logger.hpp"
 
 //static char *port = (char *) DEFAULT_RTSP_PORT;
 
@@ -33,7 +34,7 @@ void RTSPStream::InitRtspStream(const char* pipeline, const char* port, const ch
     
   GError *error = NULL;
   if(!gst_init_check(NULL, NULL, &error))
-      g_print("Didn't set up");
+      arms::log<arms::LOG_INFO>("Didn't set up");
   if(error)
   {
     g_print(error->message, "%s");
@@ -74,7 +75,7 @@ void RTSPStream::InitRtspStream(const char* pipeline, const char* port, const ch
   gst_rtsp_server_attach (server.get(), NULL);
 
   /* start serving */
-  g_print ("\nstream ready at rtsp://127.0.0.1:%s%s", port, uri);
+  arms::log<arms::LOG_CRITICAL>("stream ready at rtsp://127.0.0.1:{}[]", port, uri);
   g_main_loop_run (loop.get());
     
 }
