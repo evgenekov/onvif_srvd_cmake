@@ -61,7 +61,6 @@ void RTSPStream::InitRtspStream(const char* pipeline, const char* port, const ch
    * any launch line works as long as it contains elements named pay%d. Each
    * element with pay%d names will be a stream */
   GObjWrapper<GstRTSPMediaFactory> factory {gst_rtsp_media_factory_new ()};
-  g_print("%s", pipeline);
   gst_rtsp_media_factory_set_launch (factory.get(), pipeline);
   gst_rtsp_media_factory_set_shared (factory.get(), TRUE);
 
@@ -75,7 +74,7 @@ void RTSPStream::InitRtspStream(const char* pipeline, const char* port, const ch
   gst_rtsp_server_attach (server.get(), NULL);
 
   /* start serving */
-  g_print ("stream ready at rtsp://127.0.0.1:%s/right\n", port);
+  g_print ("\nstream ready at rtsp://127.0.0.1:%s%s", port, uri);
   g_main_loop_run (loop.get());
     
 }

@@ -673,13 +673,13 @@ int main(int argc, char *argv[])
     daemonize2(init, NULL);
 
     FOREACH_SERVICE(DECLARE_SERVICE, soap)
+
+    // Set up two RTSP test card streams to run forever
+    RTSPStream * streamLeftPtr = new RTSPStream();
+    RTSPStream * streamRightPtr = new RTSPStream();
     
-    RTSPStream * streamPtr = new RTSPStream();
-    RTSPStream * otherstreamPtr = new RTSPStream();
-    
-    
-    std::thread th1(&RTSPStream::InitRtspStream, streamPtr, "\"( videotestsrc pattern=ball ! x264enc ! rtph264pay pt=96 name=pay0 )\"", "8554", "/left");
-    std::thread th2(&RTSPStream::InitRtspStream, otherstreamPtr, "\"( videotestsrc ! x264enc ! rtph264pay pt=96 name=pay0 )\"", "554", "/right");    
+    std::thread th1(&RTSPStream::InitRtspStream, streamLeftPtr, "\"( videotestsrc pattern=ball ! x264enc ! rtph264pay pt=96 name=pay0 )\"", "8554", "/left");
+    std::thread th2(&RTSPStream::InitRtspStream, streamRightPtr, "\"( videotestsrc ! x264enc ! rtph264pay pt=96 name=pay0 )\"", "554", "/right");    
 
     while( true )
     {
