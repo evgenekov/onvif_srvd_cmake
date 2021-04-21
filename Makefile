@@ -24,6 +24,8 @@ GSOAP_CONFIGURE   = --disable-c-locale
 COMMON_DIR        = ./src
 GENERATED_DIR     = ./generated
 
+ARMOURY_DIR       = $(COMMON_DIR)/armoury/include/armoury
+THIRD_PARTY_DIR   = $(COMMON_DIR)/armoury/third_party/include
 
 CXXFLAGS          = -DDAEMON_NAME='"$(DAEMON_NAME)"'
 CXXFLAGS         += -DDAEMON_MAJOR_VERSION=$(DAEMON_MAJOR_VERSION)
@@ -36,7 +38,7 @@ CXXFLAGS         += -DDAEMON_NO_CLOSE_STDIO=$(DAEMON_NO_CLOSE_STDIO)
 
 CXXFLAGS         += -I$(COMMON_DIR)
 CXXFLAGS         += -I$(GENERATED_DIR)
-CXXFLAGS         += -I$(GSOAP_DIR) -I$(GSOAP_CUSTOM_DIR) -I$(GSOAP_PLUGIN_DIR) -I$(GSOAP_IMPORT_DIR) -I/usr/include/libconfig  -I/usr/include/gstreamer-1.0 -I/usr/include/x86_64-linux-gnu -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include
+CXXFLAGS         += -I$(GSOAP_DIR) -I$(GSOAP_CUSTOM_DIR) -I$(GSOAP_PLUGIN_DIR) -I$(GSOAP_IMPORT_DIR) -I/usr/include/libconfig  -I/usr/include/gstreamer-1.0 -I/usr/include/x86_64-linux-gnu -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I$(ARMOURY_DIR) -I$(THIRD_PARTY_DIR)
 CXXFLAGS         += -std=c++17 -O2  -Wall  -pipe
 
 CXX              ?= g++
