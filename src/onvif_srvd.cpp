@@ -217,6 +217,8 @@ static const struct option long_opts[] =
 static struct soap *soap;
 
 ServiceContext service_ctx;
+RTSPStream rtspStreams;
+
 
 
 
@@ -283,8 +285,10 @@ void processing_cfg()
     StreamProfile  profile;
     config_setting_t *setting;
     config_setting_t *profiles;
+    RTSPStreamConfig rtspConfig;
+    config_setting_t *rtspConfigs;
 
-    if(!config_read_file(&config, "/etc/onvif_srvd/config.cfg"))
+    if(!config_read_file(&config, "config.cfg"))
     {
         fprintf(stderr, "%s:%d - %s\n", config_error_file(&config), config_error_line(&config), config_error_text(&config));
         config_destroy(&config);
@@ -414,6 +418,45 @@ void processing_cfg()
     {
         DEBUG_MSG("Unable to find streaming profiles\n");
     }
+    // RTSP Streaming Configuration
+    rtspConfigs = config_lookup(&config, "rtspStreams");
+    if(rtspConfigs != NULL)
+    {
+        int length = config_setting_length(rtspConfigs);
+        int  i;
+        for(i = 0; i < length; i++)
+        {
+            config_setting_t *rtspConfigsElem = config_setting_get_elem(rtspConfigs, i);
+            config_setting_lookup_string(rtspConfigsElem, "pipeline", &str);
+            if(str != NULL)
+                rtspConfig.set_pipeline(str);
+            config_setting_lookup_string(rtspConfigsElem, "udpPort", &str);
+            if(str != NULL)
+                rtspConfig.set_udpPort(str);
+            config_setting_lookup_string(rtspConfigsElem, "tcpPort", &str);
+            if(str != NULL)
+                rtspConfig.set_tcpPort(str);
+            config_setting_lookup_string(rtspConfigsElem, "rtspUrl", &str);
+            if(str != NULL)
+                rtspConfig.set_rtspUrl(str);
+            config_setting_lookup_string(rtspConfigsElem, "testStream", &str);
+            if(str != NULL)
+                rtspConfig.set_testStream(str);
+
+
+            if( !rtspStreams.AddStream(rtspConfig) )
+                daemon_error_exit("Can't add Stream: %s\n", rtspStreams.get_cstr_err());
+
+            DEBUG_MSG("Configured RTSP Stream %s\n", rtspConfig.get_rtspUrl().c_str());
+            rtspConfig.clear();
+        }
+
+    }
+    else
+    {
+        DEBUG_MSG("Unable to find rtsp stream configurations\n");
+    }
+s
 }
 
 void processing_cmd(int argc, char *argv[])
@@ -686,19 +729,26 @@ int main(int argc, char *argv[])
         processing_cfg();
     }
 
-    arms::logger::setupLogging(daemon_info.logLevel, daemon_info.logAsync, daemon_info.logFile, daemon_info.logFileSizeMb, daemon_info.logFileCount);
-    arms::log<arms::LOG_INFO>("Logging Enabled");
-    
     daemonize2(init, NULL);
 
-    FOREACH_SERVICE(DECLARE_SERVICE, soap)
-
     // Set up two RTSP test card streams to run forever
-    RTSPStream * streamLeftPtr = new RTSPStream();
-    RTSPStream * streamRightPtr = new RTSPStream();
-    
-    std::thread th1(&RTSPStream::InitRtspStream, streamLeftPtr, "\"( videotestsrc pattern=ball ! x264enc ! rtph264pay pt=96 name=pay0 )\"", "8554", "/left");
-    std::thread th2(&RTSPStream::InitRtspStream, streamRightPtr, "\"( videotestsrc ! x264enc ! rtph264pay pt=96 name=pay0 )\"", "554", "/right");    
+    arms::logger::setupLogging(daemon_info.logLevel, daemon_info.logAsync, daemon_info.logFile, daemon_info.logFileSizeMb, daemon_info.logFileCount);
+    arms::log<arms::LOG_INFO>("Logging Enabled");
+
+    auto addedStreams = rtspStreams.get_streams();
+    arms::log<arms::LOG_INFO>("Found {} Streams", addedStreams.size());
+
+    std::vector<std::thread> threads;
+
+    for( auto it = addedStreams.cbegin(); it != addedStreams.cend(); ++it )
+    {
+        arms::log<arms::LOG_INFO>("Test Stream {}", it->second.get_pipeline().c_str());
+        threads.push_back(std::thread(&RTSPStream::InitRtspStream, it->second.get_pipeline(), it->second.get_tcpPort(), it->second.get_rtspUrl()));
+    }
+
+
+
+    FOREACH_SERVICE(DECLARE_SERVICE, soap)
 
     while( true )
     {

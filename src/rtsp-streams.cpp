@@ -16,22 +16,147 @@
  * Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
  * Boston, MA 02110-1301, USA.
  */
+#include <sstream>
 
 #include "rtsp-streams.hpp"
 #include "logger.hpp"
 
-//static char *port = (char *) DEFAULT_RTSP_PORT;
 
-
-
-void RTSPStream::InitRtspStream(const char* pipeline, const char* port, const char* uri)
+/*
+*  Access Functions for configuring streams
+*/
+bool RTSPStreamConfig::set_pipeline(const char *new_val)
 {
-    static GOptionEntry entries[] = {
-    {"port", 'p', 0, G_OPTION_ARG_STRING, &port,
-        "Port to listen on (default: " DEFAULT_RTSP_PORT ")", "PORT"},
-    {NULL}
-    };    
-    
+    if(!new_val)
+    {
+        str_err = "Name is empty";
+        return false;
+    }
+
+
+    pipeline = new_val;
+    return true;
+}
+
+
+/*
+*  Access Functions for configuring streams
+*/
+bool RTSPStreamConfig::set_udpPort(const char *new_val)
+{
+    if(!new_val)
+    {
+        str_err = "Name is empty";
+        return false;
+    }
+
+
+    udpPort = new_val;
+    return true;
+}
+
+
+/*
+*  Access Functions for configuring streams
+*/
+bool RTSPStreamConfig::set_tcpPort(const char *new_val)
+{
+    if(!new_val)
+    {
+        str_err = "Name is empty";
+        return false;
+    }
+
+
+    tcpPort = new_val;
+    return true;
+}
+
+
+/*
+*  Access Functions for configuring streams
+*/
+bool RTSPStreamConfig::set_rtspUrl(const char *new_val)
+{
+    if(!new_val)
+    {
+        str_err = "Name is empty";
+        return false;
+    }
+
+
+    rtspUrl = new_val;
+    return true;
+}
+
+
+/*
+*  Access Functions for configuring streams
+*/
+bool RTSPStreamConfig::set_testStream(const char *new_val)
+{
+    std::istringstream ss(new_val);
+    int tmp_val;
+    ss >> tmp_val;
+
+    testStream = tmp_val;
+    return true;
+}
+
+
+/*
+*  Access Functions for configuring streams
+*/
+void RTSPStreamConfig::clear()
+{
+    pipeline.clear();
+    udpPort.clear();
+    tcpPort.clear();
+    rtspUrl.clear();
+    testStream = 0;
+}
+
+
+/*
+*  Access Functions for configuring streams
+*/
+bool RTSPStreamConfig::is_valid() const
+{
+    return ( !pipeline.empty()  &&
+             !udpPort.empty()   &&
+             !tcpPort.empty()   &&
+             !rtspUrl.empty()    );
+}
+
+
+bool RTSPStream::AddStream(const RTSPStreamConfig& stream)
+{
+    if( !stream.is_valid() )
+    {
+        str_err = "stream has unset parameters";
+        return false;
+    }
+
+
+    if( streams.find(stream.get_rtspUrl()) != streams.end() )
+    {
+        str_err = "stream: " + stream.get_rtspUrl() +  " already exists";
+        return false;
+    }
+
+
+    streams[stream.get_rtspUrl()] = stream;
+    return true;
+}
+
+
+void RTSPStream::InitRtspStream(std::string pipelineStr, std::string portStr, std::string uriStr)
+{
+  // Convert std::strings to const char* for C compatibility
+  const char* pipeline = pipelineStr.c_str();
+  const char* port = portStr.c_str();
+  const char* uri = uriStr.c_str();
+
   GError *error = NULL;
   if(!gst_init_check(NULL, NULL, &error))
       arms::log<arms::LOG_INFO>("Didn't set up");
@@ -40,12 +165,7 @@ void RTSPStream::InitRtspStream(const char* pipeline, const char* port, const ch
     g_print(error->message, "%s");
     g_clear_error (&error);
   }
-  
-  GObjWrapper<GOptionContext> optctx = g_option_context_new ("TEST");
-  g_option_context_add_main_entries (optctx.get(), entries, NULL);
-  g_option_context_add_group (optctx.get(), gst_init_get_option_group ());
-  g_option_context_free (optctx.get());
-  
+
   GObjWrapper<GMainLoop> loop = g_main_loop_new (NULL, FALSE);
 
   /* create a server instance */
@@ -75,8 +195,7 @@ void RTSPStream::InitRtspStream(const char* pipeline, const char* port, const ch
   gst_rtsp_server_attach (server.get(), NULL);
 
   /* start serving */
-  arms::log<arms::LOG_CRITICAL>("stream ready at rtsp://127.0.0.1:{}[]", port, uri);
+  arms::log<arms::LOG_INFO>("stream ready at rtsp://127.0.0.1:{}{}", port, uri);
   g_main_loop_run (loop.get());
-    
 }
 
