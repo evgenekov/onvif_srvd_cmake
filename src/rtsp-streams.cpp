@@ -29,7 +29,7 @@ bool RTSPStreamConfig::set_pipeline(const char *new_val)
 {
     if(!new_val)
     {
-        str_err = "Name is empty";
+        str_err = "pipeline is empty";
         return false;
     }
 
@@ -46,7 +46,7 @@ bool RTSPStreamConfig::set_udpPort(const char *new_val)
 {
     if(!new_val)
     {
-        str_err = "Name is empty";
+        str_err = "udpPort is empty";
         return false;
     }
 
@@ -63,7 +63,7 @@ bool RTSPStreamConfig::set_tcpPort(const char *new_val)
 {
     if(!new_val)
     {
-        str_err = "Name is empty";
+        str_err = "tcpPort is empty";
         return false;
     }
 
@@ -80,7 +80,7 @@ bool RTSPStreamConfig::set_rtspUrl(const char *new_val)
 {
     if(!new_val)
     {
-        str_err = "Name is empty";
+        str_err = "rtspUrl is empty";
         return false;
     }
 
