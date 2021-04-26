@@ -99,7 +99,20 @@ bool RTSPStreamConfig::set_testStream(const char *new_val)
     int tmp_val;
     ss >> tmp_val;
 
-    testStream = tmp_val;
+
+/*
+*  Access Functions for configuring streams
+*/
+bool RTSPStreamConfig::set_testStreamSrc(const char *new_val)
+{
+    if(!new_val)
+    {
+        str_err = "testStreamSrc is empty";
+        return false;
+    }
+
+
+    testStreamSrc = new_val;
     return true;
 }
 

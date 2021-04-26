@@ -19,18 +19,20 @@ public:
 
     RTSPStreamConfig() { clear(); }
 
-    std::string  get_pipeline   (void) const { return pipeline;   }
-    std::string  get_udpPort    (void) const { return udpPort;    }
-    std::string  get_tcpPort    (void) const { return tcpPort;    }
-    std::string  get_rtspUrl    (void) const { return rtspUrl;    }
-    bool         get_testStream (void) const { return testStream; }
+    std::string  get_pipeline      (void) const { return pipeline;     }
+    std::string  get_udpPort       (void) const { return udpPort;      }
+    std::string  get_tcpPort       (void) const { return tcpPort;      }
+    std::string  get_rtspUrl       (void) const { return rtspUrl;      }
+    bool         get_testStream    (void) const { return testStream;   }
+    std::string  get_testStreamSrc (void) const { return testStreamSrc;}
 
     //methods for parsing opt from cmd
-    bool set_pipeline   (const char *new_val);
-    bool set_udpPort    (const char *new_val);
-    bool set_tcpPort    (const char *new_val);
-    bool set_rtspUrl    (const char *new_val);
-    bool set_testStream (const char *new_val);
+    bool set_pipeline      (const char *new_val);
+    bool set_udpPort       (const char *new_val);
+    bool set_tcpPort       (const char *new_val);
+    bool set_rtspUrl       (const char *new_val);
+    bool set_testStream    (int         new_val);
+    bool set_testStreamSrc (const char *new_val);
 
 
     std::string get_str_err()  const { return str_err;         }
@@ -47,6 +49,7 @@ private:
     std::string tcpPort;
     std::string rtspUrl;
     bool testStream;
+    std::string testStreamSrc;
 
     std::string  str_err;
 };

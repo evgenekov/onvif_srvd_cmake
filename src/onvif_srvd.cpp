@@ -5,7 +5,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <libconfig.h>
-
+#include <sstream>
 
 
 #include "daemon.h"
@@ -282,6 +282,7 @@ void processing_cfg()
     config_init(&config);
     const char *str;
     int value;
+    bool booleanValue;
     StreamProfile  profile;
     config_setting_t *setting;
     config_setting_t *profiles;
@@ -439,9 +440,11 @@ void processing_cfg()
             config_setting_lookup_string(rtspConfigsElem, "rtspUrl", &str);
             if(str != NULL)
                 rtspConfig.set_rtspUrl(str);
-            config_setting_lookup_string(rtspConfigsElem, "testStream", &str);
+            config_setting_lookup_bool(rtspConfigsElem, "testStream", &value);
+                rtspConfig.set_testStream(value);
+            config_setting_lookup_string(rtspConfigsElem, "testStreamSrc", &str);
             if(str != NULL)
-                rtspConfig.set_testStream(str);
+                rtspConfig.set_testStreamSrc(str);
 
 
             if( !rtspStreams.AddStream(rtspConfig) )
@@ -456,7 +459,7 @@ void processing_cfg()
     {
         DEBUG_MSG("Unable to find rtsp stream configurations\n");
     }
-s
+
 }
 
 void processing_cmd(int argc, char *argv[])
@@ -737,13 +740,25 @@ int main(int argc, char *argv[])
 
     auto addedStreams = rtspStreams.get_streams();
     arms::log<arms::LOG_INFO>("Found {} Streams", addedStreams.size());
-
     std::vector<std::thread> threads;
 
     for( auto it = addedStreams.cbegin(); it != addedStreams.cend(); ++it )
     {
-        arms::log<arms::LOG_INFO>("Test Stream {}", it->second.get_pipeline().c_str());
-        threads.push_back(std::thread(&RTSPStream::InitRtspStream, it->second.get_pipeline(), it->second.get_tcpPort(), it->second.get_rtspUrl()));
+        std::stringstream ss;
+
+        if(it->second.get_testStream())
+        {
+            ss << "\"( " << it->second.get_testStreamSrc() << it->second.get_pipeline();
+        }
+        else
+        {
+            ss << "\"( -v udpsrc port=" << it->second.get_udpPort() << " ! rtpjitterbuffer"  << it->second.get_pipeline();
+        }
+
+        std::string s = ss.str();
+
+        arms::log<arms::LOG_INFO>("Test Stream {}", s);
+        threads.push_back(std::thread(&RTSPStream::InitRtspStream, s, it->second.get_tcpPort(), it->second.get_rtspUrl()));
     }
 
 
