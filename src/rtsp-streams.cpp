@@ -93,11 +93,11 @@ bool RTSPStreamConfig::set_rtspUrl(const char *new_val)
 /*
 *  Access Functions for configuring streams
 */
-bool RTSPStreamConfig::set_testStream(const char *new_val)
+bool RTSPStreamConfig::set_testStream(int new_val)
 {
-    std::istringstream ss(new_val);
-    int tmp_val;
-    ss >> tmp_val;
+    testStream = new_val;
+    return true;
+}
 
 
 /*
