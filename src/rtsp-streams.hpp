@@ -3,9 +3,11 @@
 
 #include <stdio.h>
 #include <utility>
-#include <thread>
+#include <optional>
 #include <map>
-#include "logger.hpp"
+#include <armoury/logger.hpp>
+#include <armoury/ThreadWarden.hpp>
+#include <armoury/json.hpp>
 
 #include <gst/gst.h>
 #include <gst/rtsp-server/rtsp-server.h>
@@ -110,20 +112,96 @@ private:
     T *ptr{};
 };
 
+namespace api {
+
+struct StreamSettings : arms::json::Support<StreamSettings>
+{
+    std::string name{};
+    std::string width{"1024"};
+    std::string height{"768"};
+    std::string url{"rtsp://%s"};
+    std::string type{"H264"};
+    
+private:
+    friend class arms::json::Accessor<StreamSettings>;
+
+    template <typename D>
+    void toJson(D &dom) const
+    {
+        addMember(dom, "name", name);
+        addMember(dom, "width", width);
+        addMember(dom, "height", height);
+        addMember(dom, "url", url);
+        addMember(dom, "type", type);
+    }
+
+    template <typename D>
+    void fromJson(D const &dom)
+    {
+        updateValue(dom, "name", name);
+        updateValue(dom, "width", width);
+        updateValue(dom, "height", height);
+        updateValue(dom, "url", url);
+        updateValue(dom, "type", type);
+    }
+};
+} // namespace api
+
+
+class RTSPThread 
+{
+  public:
+      
+    /* ThreadWarden interface */
+    static constexpr char const *g_workerName{"RTSPThread"};
+    static constexpr bool g_copyDataOnce{false};
+    struct Input
+    {
+    } dataIn;
+    struct Output
+    {
+    } dataOut;
+
+    int work()
+    {
+        arms::log<arms::LOG_CRITICAL>("Running thing");
+        return 0;
+    }
+    /* End of ThreadWarden interface */
+    
+    RTSPThread(RTSPStreamConfig config)
+        : m_config{config}
+    {
+        
+    }
+    
+  private:
+    RTSPStreamConfig m_config;
+};
+
 class RTSPStream
 {
 public:
+    
     static void InitRtspStream(std::string pipelineStr, std::string portStr, std::string uriStr);
 
     std::string get_str_err() const { return str_err;         }
     const char* get_cstr_err()const { return str_err.c_str(); }
 
     const std::map<std::string, RTSPStreamConfig> &get_streams(void) { return streams; }
+    std::optional<RTSPStreamConfig> getStream(std::string streamName) const
+    {
+        if (streams.count(streamName)){
+            return streams.at(streamName);
+        }
+        return std::nullopt;
+    }
     bool AddStream(const RTSPStreamConfig& stream);
-
+    
 private:
     std::map<std::string, RTSPStreamConfig> streams;
     std::string  str_err;
+    //GObjWrapper<GMainLoop> loop;
 };
 
 

@@ -19,7 +19,7 @@
 #include <sstream>
 
 #include "rtsp-streams.hpp"
-#include "logger.hpp"
+#include <armoury/logger.hpp>
 
 
 /*
