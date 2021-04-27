@@ -4,3 +4,6 @@
 [submodule "src/armoury"]
 	path = src/armoury
 	url = https://gitlab.com/rinicom-open/armoury.git
+[submodule "external/armoury"]
+	path = external/armoury
+	url = git@gitlab.com:rinicom-open/armoury.git
