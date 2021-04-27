@@ -12,7 +12,8 @@
 #include "smacros.h"
 #include "ServiceContext.h"
 #include "rtsp-streams.hpp"
-#include "logger.hpp"
+#include "armoury/logger.hpp"
+#include "armoury/ThreadWarden.hpp"
 
 // ---- gsoap ----
 #include "DeviceBinding.nsmap"
@@ -719,6 +720,8 @@ void init(void *data)
 
 int main(int argc, char *argv[])
 {
+    arms::signals::registerThreadInterruptSignal();
+    
     // Check to see if we have passed in any arguments, if we have use the existing command process
     // Otherwise attempt to load the daemon config from file
     if( argc > 1)
@@ -731,12 +734,21 @@ int main(int argc, char *argv[])
         DEBUG_MSG("processing_cfg\n");
         processing_cfg();
     }
-
+    
+    arms::ThreadWarden<RTSPThread, RTSPStreamConfig> thread{rtspStreams.getStream("/right").value()};
+    thread.start();
+    sleep(3);
+    thread.stop();
+    
+    api::StreamSettings settings;
+    arms::log<arms::LOG_CRITICAL>(settings.toJsonString());
+    
     daemonize2(init, NULL);
 
     // Set up two RTSP test card streams to run forever
     arms::logger::setupLogging(daemon_info.logLevel, daemon_info.logAsync, daemon_info.logFile, daemon_info.logFileSizeMb, daemon_info.logFileCount);
     arms::log<arms::LOG_INFO>("Logging Enabled");
+    
 
     auto addedStreams = rtspStreams.get_streams();
     arms::log<arms::LOG_INFO>("Found {} Streams", addedStreams.size());
