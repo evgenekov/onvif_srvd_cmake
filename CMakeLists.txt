@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.7...3.20)
+include(ExternalProject)
 
 if(${CMAKE_VERSION} VERSION_LESS 3.12)
     cmake_policy(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})
@@ -14,13 +15,18 @@ set(DAEMON_PID_FILE_NAME "${DAEMON_NAME}.pid")
 set(DAEMON_LOG_FILE_NAME "${DAEMON_NAME}.log")
 set(DAEMON_NO_CHDIR 1)
 set(DAEMON_NO_CLOSE_STDIO 0)
-set(GSOAP_VERSION "2.8.113")
 
-set(GSOAP_INSTALL_DIR "./gsoap-2.8")
-set(GSOAP_DIR "${GSOAP_INSTALL_DIR}/gsoap")
+set(GSOAP_VERSION "2.8.113")
+set(GSOAP_SRC_URL "https://sourceforge.net/projects/gsoap2/files/gsoap_${GSOAP_VERSION}.zip/download")
+
+set(GSOAP_SRC_DIR "${PROJECT_SOURCE_DIR}/gsoap")
+set(GSOAP_DIR "${GSOAP_SRC_DIR}/gsoap")
 set(GSOAP_CUSTOM_DIR "${GSOAP_DIR}/custom")
 set(GSOAP_PLUGIN_DIR "${GSOAP_DIR}/plugin")
 set(GSOAP_IMPORT_DIR "${GSOAP_DIR}/import")
+set(SOAPCPP2 "${GSOAP_DIR}/src/soapcpp2")
+set(WSDL2H "${GSOAP_DIR}/wsdl/wsdl2h")
+set(GENERATED_DIR "${PROJECT_SOURCE_DIR}/generated")
 
 
 message("SOFTWARE_VERSION is " ${DAEMON_MAJOR_VERSION} ${DAEMON_MINOR_VERSION} ${DAEMON_PATCH_VERSION})
@@ -41,27 +47,23 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_CXX_FLAGS "-std=c++17 -O2  -Wall  -pipe")
 
-function(download_file url filename)
-message("Download File ${filename}")
-if(NOT EXISTS ${filename})
-  file(DOWNLOAD ${url} ${filename}
-       SHOW_PROGRESS)
-endif()
-       
-if(NOT EXISTS "${GSOAP_INSTALL_DIR}/README.txt")
-  file(ARCHIVE_EXTRACT INPUT ${filename})
-  
-endif()
+file(GLOB WSDL_FILES
+    wsdl/*.wsdl
+)
 
-execute_process(COMMAND bash -c "${PROJECT_SOURCE_DIR}/build-gsoap.sh")
-include_directories(${GSOAP_CUSTOM_DIR})
-include_directories(${GSOAP_PLUGIN_DIR})
-include_directories(${GSOAP_IMPORT_DIR})
-
-endfunction(download_file)
-
-
-download_file( "https://sourceforge.net/projects/gsoap2/files/gsoap_${GSOAP_VERSION}.zip/download" "gsoap.zip")
+ExternalProject_Add(
+    gsoap_src
+    URL ${GSOAP_SRC_URL}
+    DOWNLOAD_NAME gsoap.zip
+    BUILD_BYPRODUCTS ""
+    SOURCE_DIR "${GSOAP_SRC_DIR}"
+    BUILD_COMMAND bash -c "${PROJECT_SOURCE_DIR}/build-gsoap.sh"
+    CONFIGURE_COMMAND ""
+    PREFIX ""
+    INSTALL_DIR ""
+    INSTALL_COMMAND "mkdir -p ${GENERATED_DIR} && ${WSDL2H} -d -t ${PROJECT_SOURCE_DIR}/wsdl/typemap.dat  -o ${GENERATED_DIR}/onvif.h  ${WSDL_FILES}"
+    BUILD_IN_SOURCE 1
+)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBCONFIGXX REQUIRED libconfig++)
@@ -69,7 +71,13 @@ pkg_check_modules(LIBMOSQUITTO REQUIRED libmosquitto)
 pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0>=1.4)
 
 set(CMAKE_THREAD_LIBS_INIT "-lpthread")
-include_directories(${CMAKE_SOURCE_DIR}/src/)
+
+include_directories(
+    ${CMAKE_SOURCE_DIR}/src/
+    ${GSOAP_CUSTOM_DIR}
+    ${GSOAP_PLUGIN_DIR}
+    ${GSOAP_IMPORT_DIR}
+)
 
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/src)
 add_subdirectory(src/ ${CMAKE_BINARY_DIR}/bin/)

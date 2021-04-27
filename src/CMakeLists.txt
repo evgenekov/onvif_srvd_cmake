@@ -13,6 +13,8 @@ set( CLANG_TOOLS_FILES ${CLANG_TOOLS_FILES} ${SRCFILES} ${HDRFILES} PARENT_SCOPE
 link_directories("${PROJECT_BINARY_DIR}/lib")
 add_executable(onvif_srvd ${SRCFILES})
 
+add_dependencies(onvif_srvd gsoap_src)
+
 target_link_libraries(onvif_srvd
     ${GSTREAMER_LIBRARIES}
     ${GSTREAMER_APP_LIBRARIES}
