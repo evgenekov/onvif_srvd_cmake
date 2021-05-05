@@ -27,7 +27,7 @@
 
 static const char *help_str =
         " ===============  Help  ===============\n"
-        " Daemon name:  " DAEMON_NAME          "\n"
+        " Daemon name:  " "onvif_srvd"          "\n"
         " Daemon  ver:  " DAEMON_VERSION_STR   "\n"
 #ifdef  DEBUG
         " Build  mode:  debug\n"
@@ -481,7 +481,7 @@ void processing_cmd(int argc, char *argv[])
                         break;
 
             case LongOpts::version:
-                        puts(DAEMON_NAME "  version  " DAEMON_VERSION_STR "\n");
+                        puts("onvif_svrd" "  version  " DAEMON_VERSION_STR "\n");
                         exit_if_not_daemonized(EXIT_SUCCESS);
                         break;
 

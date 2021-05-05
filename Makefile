@@ -22,10 +22,11 @@ GSOAP_CONFIGURE   = --disable-c-locale
 
 
 COMMON_DIR        = ./src
+EXTERNAL_DIR      = ./external
 GENERATED_DIR     = ./generated
 
-ARMOURY_DIR       = $(COMMON_DIR)/armoury/include/armoury
-THIRD_PARTY_DIR   = $(COMMON_DIR)/armoury/third_party/include
+ARMOURY_DIR       = $(EXTERNAL_DIR)/armoury/include
+THIRD_PARTY_DIR   = $(EXTERNAL_DIR)/armoury/third_party/include
 
 CXXFLAGS          = -DDAEMON_NAME='"$(DAEMON_NAME)"'
 CXXFLAGS         += -DDAEMON_MAJOR_VERSION=$(DAEMON_MAJOR_VERSION)
