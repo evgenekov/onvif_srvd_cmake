@@ -48,7 +48,7 @@ set( CLANG_TOOLS_FILES ${CLANG_TOOLS_FILES} ${SRCFILES} ${HDRFILES} PARENT_SCOPE
 
 add_executable(onvif_srvd ${SRCFILES})
 
-message()
+
 
 
 target_link_libraries(onvif_srvd
