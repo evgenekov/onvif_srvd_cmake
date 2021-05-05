@@ -1,7 +1,7 @@
 message("Config Src")
 
 #Set source files
-file( GLOB SRCFILES
+set( SRCFILES
          ${SRC_DIR}/daemon.c
          ${SRC_DIR}/onvif_srvd.cpp
          ${SRC_DIR}/eth_dev_param.cpp
@@ -17,9 +17,9 @@ file( GLOB SRCFILES
          ${PROJECT_SOURCE_DIR}/generated/soapC.cpp
          ${GSOAP_PLUGIN_DIR}/wsseapi.c
          ${GSOAP_PLUGIN_DIR}/mecevp.c
-         ${GSOAP_PLUGIN_DIR}/smdevp.
+         ${GSOAP_PLUGIN_DIR}/smdevp.c
          ${GSOAP_PLUGIN_DIR}/wsaapi.c 
-         ${GSOAP_PLUGIN_DIR}/struct_timeval.c
+	 ${GSOAP_CUSTOM_DIR}/struct_timeval.c
          ${GSOAP_DIR}/stdsoap2.cpp
          ${GSOAP_DIR}/dom.cpp
          ${GSOAP_CUSTOM_DIR}/duration.c
@@ -27,7 +27,7 @@ file( GLOB SRCFILES
 )
 
 
-file( GLOB HDRFILES
+set( HDRFILES
          ${SRC_DIR}/daemon.h
          ${SRC_DIR}/eth_dev_param.h
          ${SRC_DIR}/ServiceContext.h
@@ -44,11 +44,13 @@ file( GLOB HDRFILES
          ${PROJECT_SOURCE_DIR}/generated/soapH.h
 )
 
+set_source_files_properties(${SRCFILES} PROPERTIES LANGUAGE CXX)
+
 set( CLANG_TOOLS_FILES ${CLANG_TOOLS_FILES} ${SRCFILES} ${HDRFILES} PARENT_SCOPE)
 
 add_executable(onvif_srvd ${SRCFILES})
 
-
+add_dependencies(onvif_srvd gsoap_src)
 
 
 target_link_libraries(onvif_srvd

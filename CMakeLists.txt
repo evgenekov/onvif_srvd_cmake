@@ -9,7 +9,7 @@ set( CMAKE_VERBOSE_MAKEFILE on )
 set(CMAKE_C_COMPILER "gcc")
 set(CMAKE_CXX_COMPILER "g++")
 
-project(onvif_srvd LANGUAGES CXX)
+project(onvif_srvd) # LANGUAGES CXX)
                     
 set(DAEMON_NAME "onvif_srvd")
 set(DAEMON_MAJOR_VERSION 0)
@@ -40,12 +40,12 @@ set(ARMOURY_THIRD_PARTY_SRC "${PROJECT_SOURCE_DIR}/external/armoury/third_party/
 message("SOFTWARE_VERSION is " ${DAEMON_MAJOR_VERSION} ${DAEMON_MINOR_VERSION} ${DAEMON_PATCH_VERSION})
 
 
-add_definitions( -DDAEMON_NAME=${DAEMON_NAME}
+add_definitions( -DDAEMON_NAME="${DAEMON_NAME}"
                  -DDAEMON_MAJOR_VERSION=${DAEMON_MAJOR_VERSION}
                  -DDAEMON_MINOR_VERSION=${DAEMON_MINOR_VERSION}
                  -DDAEMON_PATCH_VERSION=${DAEMON_PATCH_VERSION}
-                 -DDAEMON_PID_FILE_NAME=${DAEMON_PID_FILE_NAME}
-                 -DDAEMON_LOG_FILE_NAME=${DAEMON_LOG_FILE_NAME}
+                 -DDAEMON_PID_FILE_NAME="${DAEMON_PID_FILE_NAME}"
+                 -DDAEMON_LOG_FILE_NAME="${DAEMON_LOG_FILE_NAME}"
                  -DDAEMON_NO_CHDIR=${DAEMON_NO_CHDIR}
                  -DDAEMON_NO_CLOSE_STDIO=${DAEMON_NO_CLOSE_STDIO})
                
