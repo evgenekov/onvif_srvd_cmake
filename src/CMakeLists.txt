@@ -19,7 +19,7 @@ set( SRCFILES
          ${GSOAP_PLUGIN_DIR}/mecevp.c
          ${GSOAP_PLUGIN_DIR}/smdevp.c
          ${GSOAP_PLUGIN_DIR}/wsaapi.c 
-	 ${GSOAP_CUSTOM_DIR}/struct_timeval.c
+         ${GSOAP_CUSTOM_DIR}/struct_timeval.c
          ${GSOAP_DIR}/stdsoap2.cpp
          ${GSOAP_DIR}/dom.cpp
          ${GSOAP_CUSTOM_DIR}/duration.c
@@ -54,12 +54,17 @@ add_dependencies(onvif_srvd gsoap_src)
 
 
 target_link_libraries(onvif_srvd
-    
     ${GSTREAMER_LIBRARIES}
     ${GSTREAMER_APP_LIBRARIES}
     ${GSTREAMER_VIDEO_LIBRARIES}
     ${LIBCONFIGXX_LIBRARIES}
     ${LIBMOSQUITTO_LIBRARIES}
+    "ssl"
+    "crypto"
+    "config"
+    "gstbase-1.0"
+    "gobject-2.0"
+    "gstrtspserver-1.0"
     ${CMAKE_THREAD_LIBS_INIT}
 )
 

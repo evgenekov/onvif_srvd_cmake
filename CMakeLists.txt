@@ -47,7 +47,9 @@ add_definitions( -DDAEMON_NAME="${DAEMON_NAME}"
                  -DDAEMON_PID_FILE_NAME="${DAEMON_PID_FILE_NAME}"
                  -DDAEMON_LOG_FILE_NAME="${DAEMON_LOG_FILE_NAME}"
                  -DDAEMON_NO_CHDIR=${DAEMON_NO_CHDIR}
-                 -DDAEMON_NO_CLOSE_STDIO=${DAEMON_NO_CLOSE_STDIO})
+                 -DDAEMON_NO_CLOSE_STDIO=${DAEMON_NO_CLOSE_STDIO}
+                 -DWITH_DOM
+                 -DWITH_OPENSSL)
                
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

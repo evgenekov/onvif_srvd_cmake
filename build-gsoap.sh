@@ -37,6 +37,7 @@ echo "Create Generated Directory"
 mkdir -p $GENERATED_DIR
 echo "Generate Files"
 $WSDL2H -d -t ./wsdl/typemap.dat -o $GENERATED_DIR/onvif.h $WSDL_FILES
+echo '#import "wsse.h" ' >> $GENERATED_DIR/onvif.h
 echo "First Half"
 $SOAPCPP2 -j -L -x -S -d $GENERATED_DIR -I$GSOAP_DIR:$GSOAP_IMPORT_DIR $GENERATED_DIR/onvif.h
 
