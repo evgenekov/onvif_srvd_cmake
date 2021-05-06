@@ -9,7 +9,7 @@ set( CMAKE_VERBOSE_MAKEFILE on )
 set(CMAKE_C_COMPILER "gcc")
 set(CMAKE_CXX_COMPILER "g++")
 
-project(onvif_srvd) # LANGUAGES CXX)
+project(onvif_srvd)
                     
 set(DAEMON_NAME "onvif_srvd")
 set(DAEMON_MAJOR_VERSION 0)
@@ -56,13 +56,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS ON)
 add_compile_options(-O2  -Wall  -pipe)
 
-
-file(GLOB WSDL_FILES
-    wsdl/*.wsdl
-    wsdl/*.xsd
-)
-
-
 ExternalProject_Add(
     gsoap_src
     URL ${GSOAP_SRC_URL}
@@ -79,9 +72,12 @@ ExternalProject_Add(
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBCONFIGXX REQUIRED libconfig++)
+pkg_check_modules(LIBCONFIG REQUIRED libconfig)
 pkg_check_modules(LIBMOSQUITTO REQUIRED libmosquitto)
 pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0>=1.4)
-
+pkg_check_modules(GSTRTSPSERVER REQUIRED gstreamer-rtsp-server-1.0)
+pkg_check_modules(SSL REQUIRED openssl)
+pkg_check_modules(ZLIB REQUIRED zlib)
 set(CMAKE_THREAD_LIBS_INIT "-lpthread")
 
 include_directories(

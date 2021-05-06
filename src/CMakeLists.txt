@@ -1,4 +1,4 @@
-message("Config Src")
+message("Config onvif-srvd")
 
 #Set source files
 set( SRCFILES
@@ -23,9 +23,7 @@ set( SRCFILES
          ${GSOAP_DIR}/stdsoap2.cpp
          ${GSOAP_DIR}/dom.cpp
          ${GSOAP_CUSTOM_DIR}/duration.c
-         
 )
-
 
 set( HDRFILES
          ${SRC_DIR}/daemon.h
@@ -54,18 +52,13 @@ add_dependencies(onvif_srvd gsoap_src)
 
 
 target_link_libraries(onvif_srvd
+    ${SSL_LIBRARIES}
+    ${ZLIB_LIBRARIES}
+    ${LIBCONFIG_LIBRARIES}
+    ${GSTRTSPSERVER_LIBRARIES}
     ${GSTREAMER_LIBRARIES}
-    ${GSTREAMER_APP_LIBRARIES}
-    ${GSTREAMER_VIDEO_LIBRARIES}
-    ${LIBCONFIGXX_LIBRARIES}
-    ${LIBMOSQUITTO_LIBRARIES}
-    "ssl"
-    "crypto"
-    "config"
-    "gstbase-1.0"
-    "gobject-2.0"
-    "gstrtspserver-1.0"
     ${CMAKE_THREAD_LIBS_INIT}
+    ${LIBMOSQUITTO_LIBRARIES}
 )
 
 target_include_directories(onvif_srvd PUBLIC
@@ -77,8 +70,4 @@ target_include_directories(onvif_srvd PUBLIC
  
 )
 
-
-
-
-
-message("Config Src Complete")
+message("Config onvif-srvd Complete")
