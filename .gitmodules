@@ -1,3 +1,6 @@
 [submodule "wsdd"]
 	path = wsdd
 	url = ../wsdd.git
+[submodule "external/armoury"]
+	path = external/armoury
+	url = git@gitlab.com:rinicom-open/armoury.git

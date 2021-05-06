@@ -26,10 +26,11 @@ onvif_srvd
 onvif_srvd_debug
 
 
-
 # SDK files
 SDK/
-gsoap-2.8/
+
+# build generated files
+gsoap/
 generated/
 
 
@@ -41,9 +42,11 @@ generated/
 
 # IDE Specific files
 *.kdev4
-
+*.user
 
 
 # Files that we don't want to ignore
 !.gitignore
 /onvif-srvd-202*
+/build/
+/gsoap-2.8/

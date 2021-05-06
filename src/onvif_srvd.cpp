@@ -5,11 +5,15 @@
 #include <string.h>
 #include <getopt.h>
 #include <libconfig.h>
+#include <sstream>
 
 
 #include "daemon.h"
 #include "smacros.h"
 #include "ServiceContext.h"
+#include "rtsp-streams.hpp"
+#include "armoury/logger.hpp"
+#include "armoury/ThreadWarden.hpp"
 
 // ---- gsoap ----
 #include "DeviceBinding.nsmap"
@@ -23,7 +27,7 @@
 
 static const char *help_str =
         " ===============  Help  ===============\n"
-        " Daemon name:  " DAEMON_NAME          "\n"
+        " Daemon name:  " "onvif_srvd"          "\n"
         " Daemon  ver:  " DAEMON_VERSION_STR   "\n"
 #ifdef  DEBUG
         " Build  mode:  debug\n"
@@ -214,7 +218,7 @@ static const struct option long_opts[] =
 static struct soap *soap;
 
 ServiceContext service_ctx;
-
+RTSPStream rtspStreams;
 
 
 
@@ -282,22 +286,43 @@ void processing_cfg()
     StreamProfile  profile;
     config_setting_t *setting;
     config_setting_t *profiles;
+    RTSPStreamConfig rtspConfig;
+    config_setting_t *rtspConfigs;
 
-    if(!config_read_file(&config, "/etc/onvif_srvd/config.cfg"))
+    if(!config_read_file(&config, "config.cfg"))
     {
         fprintf(stderr, "%s:%d - %s\n", config_error_file(&config), config_error_line(&config), config_error_text(&config));
         config_destroy(&config);
         DEBUG_MSG("Unable to load config file, exiting\n");
         exit_if_not_daemonized(EXIT_FAILURE);
     }
-
+    
+    // Defaults
+    daemon_info.logLevel = "critical";
+    daemon_info.logFile = "";
+    daemon_info.logFileSizeMb = 5;
+    daemon_info.logFileCount = 10;
+    daemon_info.logAsync = false;
+    
     // Get Daemon info
     str = get_cfg_string("pidFile", config);
     if(str != NULL)
         daemon_info.pid_file = str;
-    str = get_cfg_string("logFile", config);
+    str = get_cfg_string("log_level", config);
     if(str != NULL)
-        daemon_info.log_file = str;
+        daemon_info.logLevel = str;
+    str = get_cfg_string("log_file", config);
+    if(str != NULL)
+        daemon_info.logFile = str;
+    value = get_cfg_int("log_file_size_mb", config);
+    if(value)
+        daemon_info.logFileSizeMb = value;
+    value = get_cfg_int("log_file_count", config);
+    if(value)
+        daemon_info.logFileCount = value;
+    str = get_cfg_string("log_async", config);
+    if(str != NULL)
+        daemon_info.logAsync = str;    
     DEBUG_MSG("Configured Daemon\n");
 
     // ONVIF Service Options
@@ -394,6 +419,47 @@ void processing_cfg()
     {
         DEBUG_MSG("Unable to find streaming profiles\n");
     }
+    // RTSP Streaming Configuration
+    rtspConfigs = config_lookup(&config, "rtspStreams");
+    if(rtspConfigs != NULL)
+    {
+        int length = config_setting_length(rtspConfigs);
+        int  i;
+        for(i = 0; i < length; i++)
+        {
+            config_setting_t *rtspConfigsElem = config_setting_get_elem(rtspConfigs, i);
+            config_setting_lookup_string(rtspConfigsElem, "pipeline", &str);
+            if(str != NULL)
+                rtspConfig.set_pipeline(str);
+            config_setting_lookup_string(rtspConfigsElem, "udpPort", &str);
+            if(str != NULL)
+                rtspConfig.set_udpPort(str);
+            config_setting_lookup_string(rtspConfigsElem, "tcpPort", &str);
+            if(str != NULL)
+                rtspConfig.set_tcpPort(str);
+            config_setting_lookup_string(rtspConfigsElem, "rtspUrl", &str);
+            if(str != NULL)
+                rtspConfig.set_rtspUrl(str);
+            config_setting_lookup_bool(rtspConfigsElem, "testStream", &value);
+                rtspConfig.set_testStream(value);
+            config_setting_lookup_string(rtspConfigsElem, "testStreamSrc", &str);
+            if(str != NULL)
+                rtspConfig.set_testStreamSrc(str);
+
+
+            if( !rtspStreams.AddStream(rtspConfig) )
+                daemon_error_exit("Can't add Stream: %s\n", rtspStreams.get_cstr_err());
+
+            DEBUG_MSG("Configured RTSP Stream %s\n", rtspConfig.get_rtspUrl().c_str());
+            rtspConfig.clear();
+        }
+
+    }
+    else
+    {
+        DEBUG_MSG("Unable to find rtsp stream configurations\n");
+    }
+
 }
 
 void processing_cmd(int argc, char *argv[])
@@ -414,7 +480,7 @@ void processing_cmd(int argc, char *argv[])
                         break;
 
             case LongOpts::version:
-                        puts(DAEMON_NAME "  version  " DAEMON_VERSION_STR "\n");
+                        puts("onvif_svrd" "  version  " DAEMON_VERSION_STR "\n");
                         exit_if_not_daemonized(EXIT_SUCCESS);
                         break;
 
@@ -653,6 +719,8 @@ void init(void *data)
 
 int main(int argc, char *argv[])
 {
+    arms::signals::registerThreadInterruptSignal();
+    
     // Check to see if we have passed in any arguments, if we have use the existing command process
     // Otherwise attempt to load the daemon config from file
     if( argc > 1)
@@ -665,8 +733,46 @@ int main(int argc, char *argv[])
         DEBUG_MSG("processing_cfg\n");
         processing_cfg();
     }
-
+    
+    arms::ThreadWarden<RTSPThread, RTSPStreamConfig> thread{rtspStreams.getStream("/right").value()};
+    thread.start();
+    sleep(3);
+    thread.stop();
+    
+    api::StreamSettings settings;
+    arms::log<arms::LOG_CRITICAL>(settings.toJsonString());
+    
     daemonize2(init, NULL);
+
+    // Set up two RTSP test card streams to run forever
+    arms::logger::setupLogging(daemon_info.logLevel, daemon_info.logAsync, daemon_info.logFile, daemon_info.logFileSizeMb, daemon_info.logFileCount);
+    arms::log<arms::LOG_INFO>("Logging Enabled");
+    
+
+    auto addedStreams = rtspStreams.get_streams();
+    arms::log<arms::LOG_INFO>("Found {} Streams", addedStreams.size());
+    std::vector<std::thread> threads;
+
+    for( auto it = addedStreams.cbegin(); it != addedStreams.cend(); ++it )
+    {
+        std::stringstream ss;
+
+        if(it->second.get_testStream())
+        {
+            ss << "\"( " << it->second.get_testStreamSrc() << it->second.get_pipeline();
+        }
+        else
+        {
+            ss << "\"( -v udpsrc port=" << it->second.get_udpPort() << " ! rtpjitterbuffer"  << it->second.get_pipeline();
+        }
+
+        std::string s = ss.str();
+
+        arms::log<arms::LOG_INFO>("Test Stream {}", s);
+        threads.push_back(std::thread(&RTSPStream::InitRtspStream, s, it->second.get_tcpPort(), it->second.get_rtspUrl()));
+    }
+
+
 
     FOREACH_SERVICE(DECLARE_SERVICE, soap)
 
@@ -675,10 +781,10 @@ int main(int argc, char *argv[])
         // wait new client
         if( !soap_valid_socket(soap_accept(soap)) )
         {
+            arms::log<arms::LOG_DEBUG>("SOAP Valid Socket");
             soap_stream_fault(soap, std::cerr);
             return EXIT_FAILURE;
         }
-
 
         // process service
         if( soap_begin_serve(soap) )
@@ -688,7 +794,7 @@ int main(int argc, char *argv[])
         FOREACH_SERVICE(DISPATCH_SERVICE, soap)
         else
         {
-            DEBUG_MSG("Unknown service\n");
+            arms::log<arms::LOG_DEBUG>("Unknown service");
         }
 
         soap_destroy(soap); // delete managed C++ objects

@@ -18,6 +18,7 @@ cd $SCRIPT_DIR
 SOFTWARE_VERSION=`./version.sh`
 
 BUILD_DIR=$OUT_DIR
+CMAKE_BUILD_DIR=$OUT_DIR/build
 DEB_DIR=$BUILD_DIR/onvif-srvd-$SOFTWARE_VERSION
 ETC_DIR=$DEB_DIR/etc
 LIB_DIR=$DEB_DIR/lib
@@ -25,11 +26,13 @@ BIN_DIR=$DEB_DIR/usr/sbin
 
 
 WSDD_DIR=$BUILD_DIR/wsdd
-mkdir -p $OUT_DIR $BUILD_DIR
+mkdir -p $OUT_DIR $BUILD_DIR $CMAKE_BUILD_DIR
 
 echo "Build Onvif_Srvd"
-make clean
-make WSSE_ON=1
+cd $CMAKE_BUILD_DIR
+cmake ..
+make
+cd ..
 
 echo "Build WSDD"
 cd $OUT_DIR/wsdd
@@ -82,7 +85,7 @@ echo "systemctl daemon-reload" >> $DEB_DIR/DEBIAN/postrm
 chmod +x $DEB_DIR/DEBIAN/postrm
 
 cp -a $OUT_DIR/config.cfg $ETC_DIR/onvif_srvd/
-cp -a $OUT_DIR/onvif_srvd $BIN_DIR/
+cp -a $CMAKE_BUILD_DIR/bin/onvif_srvd $BIN_DIR/
 cp -a $OUT_DIR/start_scripts/*.service $LIB_DIR/systemd/system/
 
 cp -a $OUT_DIR/wsdd/wsdd $BIN_DIR/
