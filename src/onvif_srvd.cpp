@@ -283,7 +283,6 @@ void processing_cfg()
     config_init(&config);
     const char *str;
     int value;
-    bool booleanValue;
     StreamProfile  profile;
     config_setting_t *setting;
     config_setting_t *profiles;
