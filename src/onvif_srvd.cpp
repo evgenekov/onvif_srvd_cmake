@@ -4,7 +4,10 @@
 #include <errno.h>
 #include <string.h>
 #include <getopt.h>
+#include <optional>
+#include <stdexcept>
 #include <libconfig.h>
+#include <libconfig.h++>
 #include <sstream>
 
 
@@ -12,6 +15,9 @@
 #include "smacros.h"
 #include "ServiceContext.h"
 #include "rtsp-streams.hpp"
+#include "ConfigLoader.hpp"
+#include "Configuration.hpp"
+#include "armoury/files.hpp"
 #include "armoury/logger.hpp"
 #include "armoury/ThreadWarden.hpp"
 
@@ -281,185 +287,83 @@ void processing_cfg()
     // New function to handle config file
     config_t config;
     config_init(&config);
-    const char *str;
-    int value;
     StreamProfile  profile;
-    config_setting_t *setting;
-    config_setting_t *profiles;
     RTSPStreamConfig rtspConfig;
-    config_setting_t *rtspConfigs;
 
-    if(!config_read_file(&config, "config.cfg") || !config_read_file(&config, "/etc/onvif_srvd/config.cfg"))
-    {
-        fprintf(stderr, "%s:%d - %s\n", config_error_file(&config), config_error_line(&config), config_error_text(&config));
-        config_destroy(&config);
-        DEBUG_MSG("Unable to load config file, exiting\n");
-        exit_if_not_daemonized(EXIT_FAILURE);
-    }
     
-    // Defaults
-    daemon_info.logLevel = "critical";
-    daemon_info.logFile = "";
-    daemon_info.logFileSizeMb = 5;
-    daemon_info.logFileCount = 10;
-    daemon_info.logAsync = false;
+    std::optional<std::string> const configFile{arms::files::findConfigFile("/etc/onvif_srvd/config.cfg")};
+    fprintf(stderr, "\n--%s\n", configFile.value().c_str());
+    Configuration const configStruct{configFile};
+
     
     // Get Daemon info
-    str = get_cfg_string("pidFile", config);
-    if(str != NULL)
-        daemon_info.pid_file = str;
-    str = get_cfg_string("log_level", config);
-    if(str != NULL)
-        daemon_info.logLevel = str;
-    str = get_cfg_string("log_file", config);
-    if(str != NULL)
-        daemon_info.logFile = str;
-    value = get_cfg_int("log_file_size_mb", config);
-    if(value)
-        daemon_info.logFileSizeMb = value;
-    value = get_cfg_int("log_file_count", config);
-    if(value)
-        daemon_info.logFileCount = value;
-    str = get_cfg_string("log_async", config);
-    if(str != NULL)
-        daemon_info.logAsync = str;    
+    daemon_info.pid_file = configStruct.pid_file;
+    daemon_info.logLevel = configStruct.logLevel;
+    daemon_info.log_file = configStruct.logFile;
+    daemon_info.logFile = configStruct.logFile;
+    daemon_info.logFileSizeMb = configStruct.logFileSizeMb;
+    daemon_info.logFileCount = configStruct.logFileCount;
+    daemon_info.logAsync = configStruct.logAsync;
     DEBUG_MSG("Configured Daemon\n");
 
     // ONVIF Service Options
-    value = get_cfg_int("port", config);
-    if(value)
-        service_ctx.port = value;
-    str = get_cfg_string("user", config);
-    if(str != NULL)
-        service_ctx.user = str;
-    str = get_cfg_string("password", config);
-    if(str != NULL)
-        service_ctx.password = str;
-    str = get_cfg_string("manufacturer", config);
-    if(str != NULL)
-        service_ctx.manufacturer = str;
-    str = get_cfg_string("model", config);
-    if(str != NULL)
-        service_ctx.model = str;
-    str = get_cfg_string("firmware_ver", config);
-    if(str != NULL)
-        service_ctx.firmware_version = str;
-    str = get_cfg_string("serial_num", config);
-    if(str != NULL)
-        service_ctx.serial_number = str;
-    str = get_cfg_string("hardware_id", config);
-    if(str != NULL)
-        service_ctx.hardware_id = str;
-    setting = config_lookup(&config, "scopes");
-    if(setting != NULL)
+    service_ctx.port = configStruct.port;
+    service_ctx.user = configStruct.user.c_str();
+    service_ctx.password = configStruct.password.c_str();
+    service_ctx.manufacturer = configStruct.manufacturer.c_str();
+    service_ctx.model = configStruct.model.c_str();
+    service_ctx.firmware_version = configStruct.firmware_version.c_str();
+    service_ctx.serial_number = configStruct.serial_number.c_str();
+    service_ctx.hardware_id = configStruct.hardware_id.c_str();
+
+    for (auto it = begin(configStruct.scopes); it != end(configStruct.scopes); ++it )
     {
-        int length = config_setting_length(setting);
-        int i;
-        for(i = 0; i < length; i++)
-        {
-            config_setting_t *scope = config_setting_get_elem(setting, i);
-            config_setting_lookup_string(scope, "onvifScope", &str);
-            service_ctx.scopes.push_back(str);
-        }
+        service_ctx.scopes.push_back(it->scopeUri);
     }
-    else
-    {
-        DEBUG_MSG("Unable to find scopes\n");
-    }
-    str = get_cfg_string("interfaces", config);
-    if(str != NULL)
-    {
-        service_ctx.eth_ifs.push_back(Eth_Dev_Param());
-        if( service_ctx.eth_ifs.back().open(str) != 0 )
-            daemon_error_exit("Can't open ethernet interface: %s - %m\n", str);
-    }
-    str = get_cfg_string("tz_format", config);
-    if(str != NULL)
-        if( !service_ctx.set_tz_format(str) )
-            daemon_error_exit("Can't set tz_format: %s\n", service_ctx.get_cstr_err());    
+
+    service_ctx.eth_ifs.push_back(Eth_Dev_Param());
+    if( service_ctx.eth_ifs.back().open(configStruct.interfaces.c_str()) != 0 )
+        daemon_error_exit("Can't open ethernet interface: %s - %m\n", configStruct.interfaces.c_str());
+
+    if( !service_ctx.set_tz_format(configStruct.tz_format.c_str()) )
+        daemon_error_exit("Can't set tz_format: %s\n", service_ctx.get_cstr_err());
 
     DEBUG_MSG("Configured Service\n");
 
     // Onvif Media Profiles
-    profiles = config_lookup(&config, "profiles");
-    if(profiles != NULL)
+    for (auto it = begin(configStruct.profiles); it != end(configStruct.profiles); ++it )
     {
-        int length = config_setting_length(profiles);
-        int i;
-        for(i = 0; i < length; i++)
-        {
-            config_setting_t *profileElem = config_setting_get_elem(profiles, i);
-            config_setting_lookup_string(profileElem, "name", &str);
-            if(str != NULL)
-                profile.set_name(str);
-            config_setting_lookup_string(profileElem, "width", &str);
-            if(str != NULL)
-                profile.set_width(str);
-            config_setting_lookup_string(profileElem, "height", &str);
-            if(str != NULL)
-                profile.set_height(str);
-            config_setting_lookup_string(profileElem, "url", &str);
-            if(str != NULL)
-                profile.set_url(str);       
-            config_setting_lookup_string(profileElem, "snapurl", &str);
-            if(str != NULL)
-                profile.set_snapurl(str); 
-            config_setting_lookup_string(profileElem, "type", &str);
-            if(str != NULL)
-                profile.set_type(str);
+        profile.set_name(it->name.c_str());
+        profile.set_width(it->width.c_str());
+        profile.set_height(it->height.c_str());
+        profile.set_url(it->url.c_str());
+        profile.set_snapurl(it->snapUrl.c_str());
+        profile.set_type(it->type.c_str());
 
-            if( !service_ctx.add_profile(profile) )
-                daemon_error_exit("Can't add Profile: %s\n", service_ctx.get_cstr_err());
+        if( !service_ctx.add_profile(profile) )
+            daemon_error_exit("Can't add Profile: %s\n", service_ctx.get_cstr_err());
 
-            DEBUG_MSG("configured Media Profile %s\n", profile.get_name().c_str());    
-            profile.clear();
-        }
+        DEBUG_MSG("configured Media Profile %s\n", profile.get_name().c_str());
+        profile.clear();
+
     }
-    else
-    {
-        DEBUG_MSG("Unable to find streaming profiles\n");
-    }
+
     // RTSP Streaming Configuration
-    rtspConfigs = config_lookup(&config, "rtspStreams");
-    if(rtspConfigs != NULL)
+    for (auto it = begin(configStruct.rtspStreams); it != end(configStruct.rtspStreams); ++it )
     {
-        int length = config_setting_length(rtspConfigs);
-        int  i;
-        for(i = 0; i < length; i++)
-        {
-            config_setting_t *rtspConfigsElem = config_setting_get_elem(rtspConfigs, i);
-            config_setting_lookup_string(rtspConfigsElem, "pipeline", &str);
-            if(str != NULL)
-                rtspConfig.set_pipeline(str);
-            config_setting_lookup_string(rtspConfigsElem, "udpPort", &str);
-            if(str != NULL)
-                rtspConfig.set_udpPort(str);
-            config_setting_lookup_string(rtspConfigsElem, "tcpPort", &str);
-            if(str != NULL)
-                rtspConfig.set_tcpPort(str);
-            config_setting_lookup_string(rtspConfigsElem, "rtspUrl", &str);
-            if(str != NULL)
-                rtspConfig.set_rtspUrl(str);
-            config_setting_lookup_bool(rtspConfigsElem, "testStream", &value);
-                rtspConfig.set_testStream(value);
-            config_setting_lookup_string(rtspConfigsElem, "testStreamSrc", &str);
-            if(str != NULL)
-                rtspConfig.set_testStreamSrc(str);
+        rtspConfig.set_pipeline(it->pipeline.c_str());
+        rtspConfig.set_udpPort(it->udpPort.c_str());
+        rtspConfig.set_tcpPort(it->tcpPort.c_str());
+        rtspConfig.set_rtspUrl(it->rtspUrl.c_str());
+        rtspConfig.set_testStream(it->testStream);
+        rtspConfig.set_testStreamSrc(it->testStreamSrc.c_str());
 
+        if( !rtspStreams.AddStream(rtspConfig) )
+            daemon_error_exit("Can't add Stream: %s\n", rtspStreams.get_cstr_err());
 
-            if( !rtspStreams.AddStream(rtspConfig) )
-                daemon_error_exit("Can't add Stream: %s\n", rtspStreams.get_cstr_err());
-
-            DEBUG_MSG("Configured RTSP Stream %s\n", rtspConfig.get_rtspUrl().c_str());
-            rtspConfig.clear();
-        }
-
+        DEBUG_MSG("configured Media Profile %s\n", rtspConfig.get_rtspUrl().c_str());
+        rtspConfig.clear();
     }
-    else
-    {
-        DEBUG_MSG("Unable to find rtsp stream configurations\n");
-    }
-
 }
 
 void processing_cmd(int argc, char *argv[])
@@ -734,10 +638,10 @@ int main(int argc, char *argv[])
         processing_cfg();
     }
     
-    arms::ThreadWarden<RTSPThread, RTSPStreamConfig> thread{rtspStreams.getStream("/right").value()};
+/*    arms::ThreadWarden<RTSPThread, RTSPStreamConfig> thread{rtspStreams.getStream("/right").value()};
     thread.start();
     sleep(3);
-    thread.stop();
+    thread.stop()*/;
     
     api::StreamSettings settings;
     arms::log<arms::LOG_CRITICAL>(settings.toJsonString());

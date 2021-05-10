@@ -11,6 +11,8 @@ set( SRCFILES
          ${SRC_DIR}/ServicePTZ.cpp
          ${SRC_DIR}/mosquitto_handler.c
          ${SRC_DIR}/rtsp-streams.cpp
+         ${SRC_DIR}/Configuration.cpp
+         ${SRC_DIR}/ConfigLoader.cpp
          ${PROJECT_SOURCE_DIR}/generated/soapDeviceBindingService.cpp
          ${PROJECT_SOURCE_DIR}/generated/soapMediaBindingService.cpp
          ${PROJECT_SOURCE_DIR}/generated/soapPTZBindingService.cpp
@@ -34,6 +36,8 @@ set( HDRFILES
          ${SRC_DIR}/stools.h
          ${SRC_DIR}/mosquitto_handler.h
          ${SRC_DIR}/rtsp-streams.hpp
+         ${SRC_DIR}/ConfigLoader.hpp
+         ${SRC_DIR}/Configuration.hpp
          ${PROJECT_SOURCE_DIR}/generated/onvif.h
          ${PROJECT_SOURCE_DIR}/generated/soapDeviceBindingService.h
          ${PROJECT_SOURCE_DIR}/generated/soapMediaBindingService.h
@@ -55,6 +59,7 @@ target_link_libraries(onvif_srvd
     ${SSL_LIBRARIES}
     ${ZLIB_LIBRARIES}
     ${LIBCONFIG_LIBRARIES}
+    ${LIBCONFIGXX_LIBRARIES}
     ${GSTRTSPSERVER_LIBRARIES}
     ${GSTREAMER_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
