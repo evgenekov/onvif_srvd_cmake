@@ -147,7 +147,7 @@ struct Configuration
 
     // Daemon Info
     const char * pid_file{"/tmp/onvif_svrd_debug.pid"};
-    const char * logLevel{"critical"};
+    const char * logLevel{"info"};
     const char * logFile{""};
     int logFileSizeMb{0};
     int logFileCount{0};
