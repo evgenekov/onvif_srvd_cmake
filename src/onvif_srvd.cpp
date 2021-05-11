@@ -292,7 +292,6 @@ void processing_cfg()
 
     
     std::optional<std::string> const configFile{arms::files::findConfigFile("/etc/onvif_srvd/config.cfg")};
-    fprintf(stderr, "\n--%s\n", configFile.value().c_str());
     Configuration const configStruct{configFile};
 
     
@@ -624,6 +623,8 @@ void init(void *data)
 int main(int argc, char *argv[])
 {
     arms::signals::registerThreadInterruptSignal();
+    // Force STDIO to display debugging messages
+    daemon_info.no_close_stdio = 1;
     
     // Check to see if we have passed in any arguments, if we have use the existing command process
     // Otherwise attempt to load the daemon config from file
