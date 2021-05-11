@@ -71,7 +71,7 @@ struct Profiles
         case 0:
             name = "Right_Monitor";
             width = "1024";
-            height = "468";
+            height = "768";
             url = "rtsp://%s:554/right";
             snapUrl = "";
             type = "H264";
@@ -120,15 +120,15 @@ struct RTSPStreams
             udpPort = "5001";
             tcpPort = "8554";
             rtspUrl = "/left";
-            testStream = false;
+            testStream = true;
             testStreamSrc = "videotestsrc pattern=ball";
             break;
         case 1:
-            pipeline = "Right_Monitor";
+            pipeline = " ! x264enc ! rtph264pay pt=96 name=pay0 )\"";
             udpPort = "5000";
             tcpPort = "554";
             rtspUrl = "/right";
-            testStream = false;
+            testStream = true;
             testStreamSrc = "videotestsrc";
             break;
         }
@@ -147,10 +147,10 @@ struct Configuration
 
     // Daemon Info
     const char * pid_file{"/tmp/onvif_svrd_debug.pid"};
-    const char * logLevel{"info"};
-    const char * logFile{"/tmp/logFile.log"};
-    int logFileSizeMb{5};
-    int logFileCount{10};
+    const char * logLevel{"critical"};
+    const char * logFile{""};
+    int logFileSizeMb{0};
+    int logFileCount{0};
     bool logAsync{false};
 
     // ONVIF Service Options
