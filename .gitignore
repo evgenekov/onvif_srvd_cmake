@@ -50,3 +50,5 @@ generated/
 /onvif-srvd-202*
 /build/
 /gsoap-2.8/
+/debug/
+/ex-gsoap_src*/
