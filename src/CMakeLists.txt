@@ -2,7 +2,7 @@ message("Config onvif-srvd")
 
 #Set source files
 set( SRCFILES
-         ${SRC_DIR}/daemon.c
+         ${SRC_DIR}/daemon.cpp
          ${SRC_DIR}/onvif_srvd.cpp
          ${SRC_DIR}/eth_dev_param.cpp
          ${SRC_DIR}/ServiceContext.cpp
@@ -28,14 +28,14 @@ set( SRCFILES
 )
 
 set( HDRFILES
-         ${SRC_DIR}/daemon.h
+         ${SRC_DIR}/daemon.hpp
          ${SRC_DIR}/eth_dev_param.h
          ${SRC_DIR}/ServiceContext.h
          ${SRC_DIR}/ServiceMedia.cpp
          ${SRC_DIR}/smacros.h
          ${SRC_DIR}/stools.h
          ${SRC_DIR}/mosquitto_handler.h
-         ${SRC_DIR}/rtsp-streams.hpp
+         ${SRC_DIR}/rtsp-streams.h
          ${SRC_DIR}/ConfigLoader.hpp
          ${SRC_DIR}/Configuration.hpp
          ${PROJECT_SOURCE_DIR}/generated/onvif.h

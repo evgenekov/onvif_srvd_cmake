@@ -1,3 +1,4 @@
+
 /*
  * daemon.c
  *
@@ -44,7 +45,6 @@
 #include <stdarg.h>
 #include <unistd.h>
 #include <string.h>
-#include <fcntl.h>
 #include <errno.h>
 
 #include <sys/types.h>
@@ -52,7 +52,7 @@
 #include <sys/file.h>
 
 
-#include "daemon.h"
+#include "daemon.hpp"
 
 
 
@@ -83,68 +83,158 @@
  */
 
 
+// // 
+// Daemon Info Sruff
+// // 
 
-volatile struct daemon_info_t daemon_info =
+bool DaemonInfo::set_terminated(bool new_val)
 {
-    .terminated = 0,
-    .daemonized = 0,                   //flag will be set in finale function daemonize()
+    terminated = new_val;
+    return true;
+}
 
-
-    #ifdef  DAEMON_NO_CHDIR
-        .no_chdir = DAEMON_NO_CHDIR,
-    #else
-        .no_chdir = 0,
-    #endif
-
-
-    #ifdef  DAEMON_NO_FORK
-        .no_fork = DAEMON_NO_FORK,
-    #else
-        .no_fork = 0,
-    #endif
-
-
-    #ifdef  DAEMON_NO_CLOSE_STDIO
-        .no_close_stdio = DAEMON_NO_CLOSE_STDIO,
-    #else
-        .no_close_stdio = 0,
-    #endif
-
-
-    #ifdef  DAEMON_PID_FILE_NAME
-        .pid_file = DAEMON_PID_FILE_NAME,
-    #else
-        .pid_file = NULL,
-    #endif
-
-
-    #ifdef  DAEMON_LOG_FILE_NAME
-        .log_file = DAEMON_LOG_FILE_NAME,
-    #else
-        .log_file = NULL,
-    #endif
-
-
-    #ifdef  DAEMON_CMD_PIPE_NAME
-        .cmd_pipe = DAEMON_CMD_PIPE_NAME,
-    #else
-        .cmd_pipe = NULL,
-    #endif
-};
-
-
-
-
-
-void exit_if_not_daemonized(int exit_status)
+bool DaemonInfo::set_daemonized(bool new_val)
 {
-    if( !daemon_info.daemonized )
+    daemonized = new_val;
+    return true;
+}
+
+bool DaemonInfo::set_no_chdir(bool new_val)
+{
+    no_chdir = new_val;
+    return true;
+}
+
+bool DaemonInfo::set_no_fork(bool new_val)
+{
+    no_fork = new_val;
+    return true;
+}
+
+bool DaemonInfo::set_no_close_stdio(bool new_val)
+{
+    no_close_stdio = new_val;
+    return true;
+}
+
+bool DaemonInfo::set_pidFile(std::string new_val)
+{
+    if(new_val.empty())
+    {
+        str_err = "pidFile is empty";
+        return false;
+    }
+
+
+    pidFile = new_val;
+    return true;    
+}
+
+bool DaemonInfo::set_logFile(std::string new_val)
+{
+    if(new_val.empty())
+    {
+        str_err = "pidFile is empty";
+        return false;
+    }
+
+
+    logFile = new_val;
+    return true;    
+}
+
+bool DaemonInfo::set_logLevel(std::string new_val)
+{
+    if(new_val.empty())
+    {
+        str_err = "logLevel is empty";
+        return false;
+    }
+
+
+    logLevel = new_val;
+    return true;    
+}
+
+bool DaemonInfo::set_cmdPipe(std::string new_val)
+{
+    if(new_val.empty())
+    {
+        str_err = "cmdPipe is empty";
+        return false;
+    }
+
+
+    cmdPipe = new_val;
+    return true;    
+}
+
+bool DaemonInfo::set_logFileSizeMb(size_t new_val)
+{
+    logFileSizeMb = new_val;
+    return true;
+}
+
+bool DaemonInfo::set_logFileCount(size_t new_val)
+{
+    logFileCount = new_val;
+    return true;
+}
+
+bool DaemonInfo::set_logAsync(bool new_val)
+{
+    logAsync = new_val;
+    return true;
+}
+
+bool DaemonInfo::is_valid() const
+{
+    return ( !pidFile.empty()   &&
+             !logLevel.empty()  );
+}
+
+void DaemonInfo::clear()
+{
+    pidFile.clear();
+    logFile.clear();
+    logLevel.clear();
+    cmdPipe.clear();
+    logFileSizeMb = 0;
+    logFileCount = 0;
+    
+    terminated = false;
+    daemonized = false;
+    no_chdir = false;
+    no_fork = false;
+    no_close_stdio = false;
+    logAsync = false;
+}
+
+// // 
+// Daemon Stuff
+// // 
+
+bool Daemon::SaveConfig(DaemonInfo& config)
+{
+    if( !config.is_valid() )
+    {
+        str_err = "daemon configuration has unset parameters";
+        return false;
+    }
+
+    daemonConfig = config;
+    return true;
+}
+
+
+void Daemon::exit_if_not_daemonized(int exit_status)
+{
+    if( !daemonConfig.get_daemonized() )
         _exit(exit_status);
 }
 
 
-
-void daemon_error_exit(const char *format, ...)
+void Daemon::daemon_error_exit(const char *format, ...)
 {
     va_list ap;
 
@@ -162,8 +252,7 @@ void daemon_error_exit(const char *format, ...)
 }
 
 
-
-void set_sig_handler(int signum, signal_handler_t handler)
+void Daemon::set_sig_handler(int signum, signal_handler_t handler)
 {
     struct sigaction sa;
 
@@ -173,9 +262,7 @@ void set_sig_handler(int signum, signal_handler_t handler)
         daemon_error_exit("Can't set handler for signal: %d %m\n", signum);
 }
 
-
-
-int redirect_stdio_to_devnull(void)
+int Daemon::redirect_stdio_to_devnull(void)
 {
     int fd;
 
@@ -199,7 +286,7 @@ int redirect_stdio_to_devnull(void)
 
 
 
-int create_pid_file(const char *pid_file_name)
+int Daemon::create_pid_file(std::string pid_file_name)
 {
     int fd;
     const int BUF_SIZE = 32;
@@ -207,14 +294,14 @@ int create_pid_file(const char *pid_file_name)
 
 
 
-    if( !pid_file_name )
+    if( pid_file_name.empty() )
     {
         errno = EINVAL;
         return -1;
     }
 
 
-    fd = open(pid_file_name, O_RDWR | O_CREAT, 0644);
+    fd = open(pid_file_name.c_str(), O_RDWR | O_CREAT, 0644);
     if(fd == -1)
         return -1; // Could not create on PID file
 
@@ -246,7 +333,7 @@ int create_pid_file(const char *pid_file_name)
 
 
 
-static void do_fork()
+void Daemon::do_fork()
 {
     switch( fork() )                                     // Become background process
     {
@@ -260,9 +347,9 @@ static void do_fork()
 
 
 
-void daemonize2(void (*optional_init)(void *), void *data)
+void Daemon::daemonize2(void (*optional_init)(void *), void *data)
 {
-    if( !daemon_info.no_fork )
+    if( !daemonConfig.get_no_fork() )
         do_fork();
 
 
@@ -272,19 +359,19 @@ void daemonize2(void (*optional_init)(void *), void *data)
 
     // Create a new process group(session) (SID) for the child process
     // call setsid() only if fork is done
-    if( !daemon_info.no_fork && (setsid() == -1) )
+    if( !daemonConfig.get_no_fork() && (setsid() == -1) )
         daemon_error_exit("Can't setsid: %m\n");
 
 
     // Change the current working directory to "/"
     // This prevents the current directory from locked
     // The demon must always change the directory to "/"
-    if( !daemon_info.no_chdir && (chdir("/") != 0) )
+    if( !daemonConfig.get_no_chdir() && (chdir("/") != 0) )
         daemon_error_exit("Can't chdir: %m\n");
 
 
-    if( daemon_info.pid_file && (create_pid_file(daemon_info.pid_file) == -1) )
-        daemon_error_exit("Can't create pid file: %s: %m\n", daemon_info.pid_file);
+    if( daemonConfig.get_pidFile().empty() && (create_pid_file(daemonConfig.get_pidFile()) == -1) )
+        daemon_error_exit("Can't create pid file: %s: %m\n", daemonConfig.get_pidFile().c_str());
 
 
     // call user functions for the optional initialization
@@ -292,10 +379,10 @@ void daemonize2(void (*optional_init)(void *), void *data)
     if( optional_init )
         optional_init(data);
 
-
-    if( !daemon_info.no_close_stdio && (redirect_stdio_to_devnull() != 0) )
+ 
+    if( !daemonConfig.get_no_close_stdio() && (redirect_stdio_to_devnull() != 0) )
         daemon_error_exit("Can't redirect stdio to /dev/null: %m\n");
 
 
-    daemon_info.daemonized = 1; //good job
+    daemonConfig.set_daemonized(true); //good job
 }

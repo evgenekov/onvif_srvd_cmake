@@ -5,7 +5,6 @@
 #include <map>
 #include <optional>
 #include <string>
-#include "daemon.h"
 #include "ServiceContext.h"
 
 struct Scopes
@@ -142,7 +141,6 @@ struct Configuration
     explicit Configuration(ConfigLoader &loader);
     void loadAllSettings(ConfigLoader &loader);
 
-    daemon_info_t GetDaemonInfo();
     void SetServiceContext(ServiceContext *service_ctx);
 
     // Daemon Info

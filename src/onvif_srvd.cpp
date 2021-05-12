@@ -11,10 +11,11 @@
 #include <sstream>
 
 
-#include "daemon.h"
+
+#include "daemon.hpp"
 #include "smacros.h"
 #include "ServiceContext.h"
-#include "rtsp-streams.hpp"
+#include "rtsp-streams.h"
 #include "ConfigLoader.hpp"
 #include "Configuration.hpp"
 #include "armoury/files.hpp"
@@ -225,7 +226,7 @@ static struct soap *soap;
 
 ServiceContext service_ctx;
 RTSPStream rtspStreams;
-
+Daemon onvifDaemon;
 
 
 
@@ -239,7 +240,7 @@ void daemon_exit_handler(int sig)
     soap_free(soap);    // free the context
 
 
-    unlink(daemon_info.pid_file);
+    unlink(onvifDaemon.GetDaemonInfo().get_pidFile().c_str());
 
 
     exit(EXIT_SUCCESS); // good job (we interrupted (finished) main loop)
@@ -249,8 +250,8 @@ void daemon_exit_handler(int sig)
 
 void init_signals(void)
 {
-    set_sig_handler(SIGINT,  daemon_exit_handler); //for Ctlr-C in terminal for debug (in debug mode)
-    set_sig_handler(SIGTERM, daemon_exit_handler);
+    onvifDaemon.set_sig_handler(SIGINT,  daemon_exit_handler); //for Ctlr-C in terminal for debug (in debug mode)
+    onvifDaemon.set_sig_handler(SIGTERM, daemon_exit_handler);
 
     signal(SIGCHLD, SIG_IGN); // ignore child
     signal(SIGTSTP, SIG_IGN); // ignore tty signals
@@ -289,20 +290,23 @@ void processing_cfg()
     config_init(&config);
     StreamProfile  profile;
     RTSPStreamConfig rtspConfig;
-
+    DaemonInfo daemonInfo;
     
     std::optional<std::string> const configFile{arms::files::findConfigFile("/etc/onvif_srvd/config.cfg")};
     Configuration const configStruct{configFile};
 
     
     // Get Daemon info
-    daemon_info.pid_file = configStruct.pid_file;
-    daemon_info.logLevel = configStruct.logLevel;
-    daemon_info.log_file = configStruct.logFile;
-    daemon_info.logFile = configStruct.logFile;
-    daemon_info.logFileSizeMb = configStruct.logFileSizeMb;
-    daemon_info.logFileCount = configStruct.logFileCount;
-    daemon_info.logAsync = configStruct.logAsync;
+    daemonInfo.set_pidFile(configStruct.pid_file);
+    daemonInfo.set_logLevel(configStruct.logLevel);
+    daemonInfo.set_logFile(configStruct.logFile);
+    daemonInfo.set_logFileSizeMb(configStruct.logFileSizeMb);
+    daemonInfo.set_logFileCount(configStruct.logFileCount);
+    daemonInfo.set_logAsync(configStruct.logAsync);
+    
+    if( !onvifDaemon.SaveConfig(daemonInfo) )
+        onvifDaemon.daemon_error_exit("Can't save daemon info: %s\n", service_ctx.get_cstr_err());
+
     DEBUG_MSG("Configured Daemon\n");
 
     // ONVIF Service Options
@@ -322,10 +326,10 @@ void processing_cfg()
 
     service_ctx.eth_ifs.push_back(Eth_Dev_Param());
     if( service_ctx.eth_ifs.back().open(configStruct.interfaces.c_str()) != 0 )
-        daemon_error_exit("Can't open ethernet interface: %s - %m\n", configStruct.interfaces.c_str());
+        onvifDaemon.daemon_error_exit("Can't open ethernet interface: %s - %m\n", configStruct.interfaces.c_str());
 
     if( !service_ctx.set_tz_format(configStruct.tz_format.c_str()) )
-        daemon_error_exit("Can't set tz_format: %s\n", service_ctx.get_cstr_err());
+        onvifDaemon.daemon_error_exit("Can't set tz_format: %s\n", service_ctx.get_cstr_err());
 
     DEBUG_MSG("Configured Service\n");
 
@@ -340,7 +344,7 @@ void processing_cfg()
         profile.set_type(it->type.c_str());
 
         if( !service_ctx.add_profile(profile) )
-            daemon_error_exit("Can't add Profile: %s\n", service_ctx.get_cstr_err());
+            onvifDaemon.daemon_error_exit("Can't add Profile: %s\n", service_ctx.get_cstr_err());
 
         DEBUG_MSG("configured Media Profile %s\n", profile.get_name().c_str());
         profile.clear();
@@ -358,7 +362,7 @@ void processing_cfg()
         rtspConfig.set_testStreamSrc(it->testStreamSrc.c_str());
 
         if( !rtspStreams.AddStream(rtspConfig) )
-            daemon_error_exit("Can't add Stream: %s\n", rtspStreams.get_cstr_err());
+            onvifDaemon.daemon_error_exit("Can't add Stream: %s\n", rtspStreams.get_cstr_err());
 
         DEBUG_MSG("configured Media Profile %s\n", rtspConfig.get_rtspUrl().c_str());
         rtspConfig.clear();
@@ -379,34 +383,34 @@ void processing_cmd(int argc, char *argv[])
 
             case LongOpts::help:
                         puts(help_str);
-                        exit_if_not_daemonized(EXIT_SUCCESS);
+                        onvifDaemon.exit_if_not_daemonized(EXIT_SUCCESS);
                         break;
 
             case LongOpts::version:
                         puts("onvif_svrd" "  version  " DAEMON_VERSION_STR "\n");
-                        exit_if_not_daemonized(EXIT_SUCCESS);
+                        onvifDaemon.exit_if_not_daemonized(EXIT_SUCCESS);
                         break;
 
 
                  //daemon options
             case LongOpts::no_chdir:
-                        daemon_info.no_chdir = 1;
+                        onvifDaemon.GetDaemonInfo().set_no_chdir(true);
                         break;
 
             case LongOpts::no_fork:
-                        daemon_info.no_fork = 1;
+                        onvifDaemon.GetDaemonInfo().set_no_fork(true);
                         break;
 
             case LongOpts::no_close:
-                        daemon_info.no_close_stdio = 1;
+                        onvifDaemon.GetDaemonInfo().set_no_close_stdio(true);
                         break;
 
             case LongOpts::pid_file:
-                        daemon_info.pid_file = optarg;
+                        onvifDaemon.GetDaemonInfo().set_pidFile(optarg);
                         break;
 
             case LongOpts::log_file:
-                        daemon_info.log_file = optarg;
+                        onvifDaemon.GetDaemonInfo().set_logFile(optarg);
                         break;
 
 
@@ -451,13 +455,13 @@ void processing_cmd(int argc, char *argv[])
                         service_ctx.eth_ifs.push_back(Eth_Dev_Param());
 
                         if( service_ctx.eth_ifs.back().open(optarg) != 0 )
-                            daemon_error_exit("Can't open ethernet interface: %s - %m\n", optarg);
+                            onvifDaemon.daemon_error_exit("Can't open ethernet interface: %s - %m\n", optarg);
 
                         break;
 
             case LongOpts::tz_format:
                         if( !service_ctx.set_tz_format(optarg) )
-                            daemon_error_exit("Can't set tz_format: %s\n", service_ctx.get_cstr_err());
+                            onvifDaemon.daemon_error_exit("Can't set tz_format: %s\n", service_ctx.get_cstr_err());
 
                         break;
 
@@ -465,45 +469,45 @@ void processing_cmd(int argc, char *argv[])
             //Media Profile for ONVIF Media Service
             case LongOpts::name:
                         if( !profile.set_name(optarg) )
-                            daemon_error_exit("Can't set name for Profile: %s\n", profile.get_cstr_err());
+                            onvifDaemon.daemon_error_exit("Can't set name for Profile: %s\n", profile.get_cstr_err());
 
                         break;
 
 
             case LongOpts::width:
                         if( !profile.set_width(optarg) )
-                            daemon_error_exit("Can't set width for Profile: %s\n", profile.get_cstr_err());
+                            onvifDaemon.daemon_error_exit("Can't set width for Profile: %s\n", profile.get_cstr_err());
 
                         break;
 
 
             case LongOpts::height:
                         if( !profile.set_height(optarg) )
-                            daemon_error_exit("Can't set height for Profile: %s\n", profile.get_cstr_err());
+                            onvifDaemon.daemon_error_exit("Can't set height for Profile: %s\n", profile.get_cstr_err());
 
                         break;
 
 
             case LongOpts::url:
                         if( !profile.set_url(optarg) )
-                            daemon_error_exit("Can't set URL for Profile: %s\n", profile.get_cstr_err());
+                            onvifDaemon.daemon_error_exit("Can't set URL for Profile: %s\n", profile.get_cstr_err());
 
                         break;
 
 
             case LongOpts::snapurl:
                         if( !profile.set_snapurl(optarg) )
-                            daemon_error_exit("Can't set URL for Snapshot: %s\n", profile.get_cstr_err());
+                            onvifDaemon.daemon_error_exit("Can't set URL for Snapshot: %s\n", profile.get_cstr_err());
 
                         break;
 
 
             case LongOpts::type:
                         if( !profile.set_type(optarg) )
-                            daemon_error_exit("Can't set type for Profile: %s\n", profile.get_cstr_err());
+                            onvifDaemon.daemon_error_exit("Can't set type for Profile: %s\n", profile.get_cstr_err());
 
                         if( !service_ctx.add_profile(profile) )
-                            daemon_error_exit("Can't add Profile: %s\n", service_ctx.get_cstr_err());
+                            onvifDaemon.daemon_error_exit("Can't add Profile: %s\n", service_ctx.get_cstr_err());
 
                         profile.clear(); //now we can add new profile (just uses one variable)
 
@@ -518,49 +522,49 @@ void processing_cmd(int argc, char *argv[])
 
             case LongOpts::move_left:
                         if( !service_ctx.get_ptz_node()->set_move_left(optarg) )
-                            daemon_error_exit("Can't set process for pan left movement: %s\n", service_ctx.get_ptz_node()->get_cstr_err());
+                            onvifDaemon.daemon_error_exit("Can't set process for pan left movement: %s\n", service_ctx.get_ptz_node()->get_cstr_err());
 
                         break;
 
 
             case LongOpts::move_right:
                         if( !service_ctx.get_ptz_node()->set_move_right(optarg) )
-                            daemon_error_exit("Can't set process for pan right movement: %s\n", service_ctx.get_ptz_node()->get_cstr_err());
+                            onvifDaemon.daemon_error_exit("Can't set process for pan right movement: %s\n", service_ctx.get_ptz_node()->get_cstr_err());
 
                         break;
 
 
             case LongOpts::move_up:
                         if( !service_ctx.get_ptz_node()->set_move_up(optarg) )
-                            daemon_error_exit("Can't set process for tilt up movement: %s\n", service_ctx.get_ptz_node()->get_cstr_err());
+                            onvifDaemon.daemon_error_exit("Can't set process for tilt up movement: %s\n", service_ctx.get_ptz_node()->get_cstr_err());
 
                         break;
 
 
             case LongOpts::move_down:
                         if( !service_ctx.get_ptz_node()->set_move_down(optarg) )
-                            daemon_error_exit("Can't set process for tilt down movement: %s\n", service_ctx.get_ptz_node()->get_cstr_err());
+                            onvifDaemon.daemon_error_exit("Can't set process for tilt down movement: %s\n", service_ctx.get_ptz_node()->get_cstr_err());
 
                         break;
 
 
             case LongOpts::move_stop:
                         if( !service_ctx.get_ptz_node()->set_move_stop(optarg) )
-                            daemon_error_exit("Can't set process for stop movement: %s\n", service_ctx.get_ptz_node()->get_cstr_err());
+                            onvifDaemon.daemon_error_exit("Can't set process for stop movement: %s\n", service_ctx.get_ptz_node()->get_cstr_err());
 
                         break;
 
 
             case LongOpts::move_preset:
                         if( !service_ctx.get_ptz_node()->set_move_preset(optarg) )
-                            daemon_error_exit("Can't set process for goto preset movement: %s\n", service_ctx.get_ptz_node()->get_cstr_err());
+                            onvifDaemon.daemon_error_exit("Can't set process for goto preset movement: %s\n", service_ctx.get_ptz_node()->get_cstr_err());
 
                         break;
 
 
             default:
                         puts("for more detail see help\n\n");
-                        exit_if_not_daemonized(EXIT_FAILURE);
+                        onvifDaemon.exit_if_not_daemonized(EXIT_FAILURE);
                         break;
         }
     }
@@ -571,15 +575,15 @@ void processing_cmd(int argc, char *argv[])
 void check_service_ctx(void)
 {
     if(service_ctx.eth_ifs.empty())
-        daemon_error_exit("Error: not set no one ehternet interface more details see opt --ifs\n");
+        onvifDaemon.daemon_error_exit("Error: not set no one ehternet interface more details see opt --ifs\n");
 
 
     if(service_ctx.scopes.empty())
-        daemon_error_exit("Error: not set scopes more details see opt --scope\n");
+        onvifDaemon.daemon_error_exit("Error: not set scopes more details see opt --scope\n");
 
 
     if(service_ctx.get_profiles().empty())
-        daemon_error_exit("Error: not set no one profile more details see --help\n");
+        onvifDaemon.daemon_error_exit("Error: not set no one profile more details see --help\n");
 }
 
 
@@ -589,7 +593,7 @@ void init_gsoap(void)
     soap = soap_new();
 
     if(!soap)
-        daemon_error_exit("Can't get mem for SOAP\n");
+        onvifDaemon.daemon_error_exit("Can't get mem for SOAP\n");
 
 
     soap->bind_flags = SO_REUSEADDR;
@@ -624,7 +628,7 @@ int main(int argc, char *argv[])
 {
     arms::signals::registerThreadInterruptSignal();
     // Force STDIO to display debugging messages
-    daemon_info.no_close_stdio = 1;
+    
     
     // Check to see if we have passed in any arguments, if we have use the existing command process
     // Otherwise attempt to load the daemon config from file
@@ -647,10 +651,10 @@ int main(int argc, char *argv[])
     api::StreamSettings settings;
     arms::log<arms::LOG_CRITICAL>(settings.toJsonString());
     
-    daemonize2(init, NULL);
+    onvifDaemon.daemonize2(init, NULL);
 
     // Set up two RTSP test card streams to run forever
-    arms::logger::setupLogging(daemon_info.logLevel, daemon_info.logAsync, daemon_info.logFile, daemon_info.logFileSizeMb, daemon_info.logFileCount);
+    arms::logger::setupLogging(onvifDaemon.GetDaemonInfo().get_logLevel(), onvifDaemon.GetDaemonInfo().get_logAsync(), onvifDaemon.GetDaemonInfo().get_logFile(), onvifDaemon.GetDaemonInfo().get_logFileSizeMb(), onvifDaemon.GetDaemonInfo().get_logFileCount());
     arms::log<arms::LOG_INFO>("Logging Enabled");
     
 
