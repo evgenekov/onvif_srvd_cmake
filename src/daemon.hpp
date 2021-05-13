@@ -1,9 +1,9 @@
 
 /*
- * daemon.h
+ * daemon.hpp
  *
  *
- * version 1.1
+ * version 1.2
  *
  *
  *
@@ -43,7 +43,6 @@
 #ifndef DAEMON_HEADER
 #define DAEMON_HEADER
 
-
 #include <stddef.h>  //for NULL
 #include <signal.h>
 
@@ -54,12 +53,8 @@
 #include <string>
 #include <errno.h>
 
-
-
-
 #define DAEMON_DEF_TO_STR_(text) #text
 #define DAEMON_DEF_TO_STR(arg) DAEMON_DEF_TO_STR_(arg)
-
 
 #define DAEMON_MAJOR_VERSION_STR  DAEMON_DEF_TO_STR(DAEMON_MAJOR_VERSION)
 #define DAEMON_MINOR_VERSION_STR  DAEMON_DEF_TO_STR(DAEMON_MINOR_VERSION)
@@ -70,11 +65,18 @@
                             DAEMON_PATCH_VERSION_STR
 
 
-
+/*******************************************************************************
+ * Storage class to hold the configuration parameters needed by the Daemon class
+ *
+ * This class contains access functions for each setting stored in the private
+ * area of the class, DaemonInfo is to be used during the settings loading
+ * stage of the application and throughout use as a common means to store any
+ * settings the daemon needs to function correctly
+ ******************************************************************************/
 class DaemonInfo
 {
 public:
-
+    // Get Access Functions
     bool  get_terminated           (void) const { return terminated;     }
     bool  get_daemonized           (void) const { return daemonized;     }
     bool  get_no_chdir             (void) const { return no_chdir;       }
@@ -84,11 +86,11 @@ public:
     std::string  get_logFile       (void) const { return logFile;        }
     std::string  get_logLevel      (void) const { return logLevel;       }
     std::string  get_cmdPipe       (void) const { return cmdPipe;        }
-    size_t  get_logFileSizeMb         (void) const { return logFileSizeMb;  }
-    size_t  get_logFileCount          (void) const { return logFileCount;   }
+    size_t  get_logFileSizeMb      (void) const { return logFileSizeMb;  }
+    size_t  get_logFileCount       (void) const { return logFileCount;   }
     bool get_logAsync              (void) const { return logAsync;       }
     
-    //methods for parsing opt from cmd
+    // Set Access Functions
     bool set_terminated            (bool        new_val);
     bool set_daemonized            (bool        new_val);
     bool set_no_chdir              (bool        new_val);
@@ -102,15 +104,15 @@ public:
     bool set_logFileCount          (size_t      new_val);
     bool set_logAsync              (bool        new_val);
 
+    // Error Handling
     std::string get_str_err()  const { return str_err;         }
     const char* get_cstr_err() const { return str_err.c_str(); }
     
+    // Validation Functions
     void clear(void);
     bool is_valid(void) const;
 
-
 private:
-
     bool terminated{false};
     bool daemonized{false};
     bool no_chdir{false};
@@ -130,36 +132,36 @@ private:
 };
                             
 
+/*******************************************************************************
+ * Main class to configure and manage the daemon
+ *
+ * This class is to be used by the main code to set up a functioning daemon
+ ******************************************************************************/
 class Daemon
 {
 public:
-
+    typedef void (*signal_handler_t) (int);
+    
+    // Daemon management functions
     int redirect_stdio_to_devnull(void);
     int create_pid_file(std::string pid_file_name);
     void daemon_error_exit(const char *format, ...);
     void exit_if_not_daemonized(int exit_status);
     void do_fork();
-
-    typedef void (*signal_handler_t) (int);
-
     void set_sig_handler(int signum, signal_handler_t handler);
     void daemonize2(void (*optional_init)(void *), void *data);
+    
+    // Settings configuration
     bool SaveConfig(DaemonInfo& config);
     DaemonInfo GetDaemonInfo() { return daemonConfig; }
     
+    // Error Handling
     std::string get_str_err() const { return str_err;         }
     const char* get_cstr_err()const { return str_err.c_str(); }    
 
 private:
     DaemonInfo daemonConfig;
     std::string  str_err;
-    
 };
-
-
-
-
-
-
 
 #endif //DAEMON_HEADER
