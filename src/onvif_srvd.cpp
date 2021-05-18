@@ -117,6 +117,7 @@ void GSoapInstance::runSoapInstance()
 
     while( true )
     {
+
         // wait new client
         if( !soap_valid_socket(soap_accept(soapInstance)) )
         {
@@ -263,7 +264,7 @@ int main(int argc, char *argv[])
     
     api::StreamSettings settings;
     arms::log<arms::LOG_CRITICAL>(settings.toJsonString());
-    
+
     // Set up two RTSP test card streams to run forever
     arms::logger::setupLogging(onvifDaemon.GetDaemonInfo().get_logLevel(), onvifDaemon.GetDaemonInfo().get_logAsync(), onvifDaemon.GetDaemonInfo().get_logFile(), onvifDaemon.GetDaemonInfo().get_logFileSizeMb(), onvifDaemon.GetDaemonInfo().get_logFileCount());
     arms::log<arms::LOG_INFO>("Logging Enabled");
@@ -291,8 +292,17 @@ int main(int argc, char *argv[])
         threads.push_back(std::thread(&RTSPStream::InitRtspStream, s, it->second.get_tcpPort(), it->second.get_rtspUrl()));
     }
 
-    GSoapInstance gSoapInstance(service_ctx);
-    gSoapInstance.runSoapInstance();
+    //GSoapInstance gSoapInstance(service_ctx);
+    //gSoapInstance.runSoapInstance();
+
+    GSoapInstance * gSoapInstancePtr = new GSoapInstance(service_ctx);
+    threads.push_back((std::thread(&GSoapInstance::runSoapInstance, gSoapInstancePtr)));
+
+    while(1)
+    {
+
+    }
+    //std::thread th(&GSoapInstance::runSoapInstance, gSoapInstancePtr);
 
 
     return EXIT_FAILURE; // Error, normal exit from the main loop only through the signal handler.
