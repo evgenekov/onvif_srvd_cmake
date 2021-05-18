@@ -74,9 +74,10 @@ public:
 
 private:
     struct soap *soapInstance;
+    ServiceContext serviceCtx;
 };
 
-GSoapInstance::GSoapInstance(ServiceContext service_ctx)
+GSoapInstance::GSoapInstance(ServiceContext service_ctx) : serviceCtx(service_ctx)
 {
     soapInstance = soap_new();
 
@@ -85,7 +86,7 @@ GSoapInstance::GSoapInstance(ServiceContext service_ctx)
 
     soapInstance->bind_flags = SO_REUSEADDR;
 
-    if( !soap_valid_socket(soap_bind(soapInstance, NULL, service_ctx.port, 10)) )
+    if( !soap_valid_socket(soap_bind(soapInstance, NULL, serviceCtx.port, 10)) )
     {
         soap_stream_fault(soapInstance, std::cerr);
         exit(EXIT_FAILURE);
@@ -96,8 +97,7 @@ GSoapInstance::GSoapInstance(ServiceContext service_ctx)
 
 
     //save pointer of service_ctx in soap
-    soapInstance->user = (void*)&service_ctx;
-    runSoapInstance();
+    soapInstance->user = (void*)&serviceCtx;
 }
 
 GSoapInstance::~GSoapInstance()
@@ -109,7 +109,6 @@ GSoapInstance::~GSoapInstance()
 void GSoapInstance::runSoapInstance()
 {
     FOREACH_SERVICE(DECLARE_SERVICE, soapInstance)
-    arms::log<arms::LOG_INFO>("gSoap Enabled");
 
     while( true )
     {
@@ -130,6 +129,7 @@ void GSoapInstance::runSoapInstance()
         else
         {
             arms::log<arms::LOG_DEBUG>("Unknown service");
+            throw std::runtime_error("Unknown service");
         }
 
         soap_destroy(soapInstance); // delete managed C++ objects
@@ -381,8 +381,8 @@ int main(int argc, char *argv[])
         threads.push_back(std::thread(&RTSPStream::InitRtspStream, s, it->second.get_tcpPort(), it->second.get_rtspUrl()));
     }
 
-    GSoapInstance *gSoapInstance = new GSoapInstance(service_ctx);
-
+    GSoapInstance gSoapInstance(service_ctx);
+    gSoapInstance.runSoapInstance();
 //    FOREACH_SERVICE(DECLARE_SERVICE, soap)
 
 //    while( true )
