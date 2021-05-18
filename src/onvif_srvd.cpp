@@ -62,41 +62,118 @@
                     soap_stream_fault(soap, std::cerr);                  \
                 }
 
-static struct soap *soap;
+
+class GSoapInstance
+{
+public:
+    GSoapInstance(ServiceContext service_ctx);
+    ~GSoapInstance();
+
+    //struct soap getSoapContext() { return *soap; }
+    void runSoapInstance();
+
+private:
+    struct soap *soapInstance;
+};
+
+GSoapInstance::GSoapInstance(ServiceContext service_ctx)
+{
+    soapInstance = soap_new();
+
+    if(!soapInstance)
+        throw std::out_of_range("soap context is empty");
+
+    soapInstance->bind_flags = SO_REUSEADDR;
+
+    if( !soap_valid_socket(soap_bind(soapInstance, NULL, service_ctx.port, 10)) )
+    {
+        soap_stream_fault(soapInstance, std::cerr);
+        exit(EXIT_FAILURE);
+    }
+
+    soapInstance->send_timeout = 3; // timeout in sec
+    soapInstance->recv_timeout = 3; // timeout in sec
+
+
+    //save pointer of service_ctx in soap
+    soapInstance->user = (void*)&service_ctx;
+    runSoapInstance();
+}
+
+GSoapInstance::~GSoapInstance()
+{
+    soap_destroy(soapInstance); // delete managed C++ objects
+    soap_end(soapInstance);     // delete managed memory
+}
+
+void GSoapInstance::runSoapInstance()
+{
+    FOREACH_SERVICE(DECLARE_SERVICE, soapInstance)
+    arms::log<arms::LOG_INFO>("gSoap Enabled");
+
+    while( true )
+    {
+        // wait new client
+        if( !soap_valid_socket(soap_accept(soapInstance)) )
+        {
+            arms::log<arms::LOG_DEBUG>("SOAP Valid Socket");
+            soap_stream_fault(soapInstance, std::cerr);
+            throw std::invalid_argument("gSoap invalid socket");
+        }
+
+        // process service
+        if( soap_begin_serve(soapInstance) )
+        {
+            soap_stream_fault(soapInstance, std::cerr);
+        }
+        FOREACH_SERVICE(DISPATCH_SERVICE, soapInstance)
+        else
+        {
+            arms::log<arms::LOG_DEBUG>("Unknown service");
+        }
+
+        soap_destroy(soapInstance); // delete managed C++ objects
+        soap_end(soapInstance);     // delete managed memory
+    }
+}
+
+
+//static struct soap *soap;
 
 ServiceContext service_ctx;
 RTSPStream rtspStreams;
 Daemon onvifDaemon;
 
 
-void daemon_exit_handler(int sig)
-{
-    //Here we release resources
 
-    UNUSED(sig);
-    soap_destroy(soap); // delete managed C++ objects
-    soap_end(soap);     // delete managed memory
-    soap_free(soap);    // free the context
+//void daemon_exit_handler(int sig)
+//{
+//    //Here we release resources
 
-
-    unlink(onvifDaemon.GetDaemonInfo().get_pidFile().c_str());
+//    UNUSED(sig);
+//    soap_destroy(soap); // delete managed C++ objects
+//    soap_end(soap);     // delete managed memory
+//    soap_free(soap);    // free the context
 
 
-    exit(EXIT_SUCCESS); // good job (we interrupted (finished) main loop)
-}
+//    unlink(onvifDaemon.GetDaemonInfo().get_pidFile().c_str());
 
 
-void init_signals(void)
-{
-    onvifDaemon.set_sig_handler(SIGINT,  daemon_exit_handler); //for Ctlr-C in terminal for debug (in debug mode)
-    onvifDaemon.set_sig_handler(SIGTERM, daemon_exit_handler);
+//    exit(EXIT_SUCCESS); // good job (we interrupted (finished) main loop)
+//}
 
-    signal(SIGCHLD, SIG_IGN); // ignore child
-    signal(SIGTSTP, SIG_IGN); // ignore tty signals
-    signal(SIGTTOU, SIG_IGN);
-    signal(SIGTTIN, SIG_IGN);
-    signal(SIGHUP,  SIG_IGN);
-}
+
+//void init_signals(void)
+//{
+//    onvifDaemon.set_sig_handler(SIGINT,  daemon_exit_handler); //for Ctlr-C in terminal for debug (in debug mode)
+//    onvifDaemon.set_sig_handler(SIGTERM, daemon_exit_handler);
+
+//    signal(SIGCHLD, SIG_IGN); // ignore child
+//    signal(SIGTSTP, SIG_IGN); // ignore tty signals
+//    signal(SIGTTOU, SIG_IGN);
+//    signal(SIGTTIN, SIG_IGN);
+//    signal(SIGHUP,  SIG_IGN);
+//}
 
 
 const char* get_cfg_string(const char* setting, config_t config)
@@ -206,57 +283,58 @@ void processing_cfg(Configuration configStruct)
 }
 
 
-void check_service_ctx(void)
-{
-    if(service_ctx.eth_ifs.empty())
-        onvifDaemon.daemon_error_exit("Error: not set no one ehternet interface more details see opt --ifs\n");
+//void check_service_ctx(void)
+//{
+//    if(service_ctx.eth_ifs.empty())
+//        onvifDaemon.daemon_error_exit("Error: not set no one ehternet interface more details see opt --ifs\n");
 
 
-    if(service_ctx.scopes.empty())
-        onvifDaemon.daemon_error_exit("Error: not set scopes more details see opt --scope\n");
+//    if(service_ctx.scopes.empty())
+//        onvifDaemon.daemon_error_exit("Error: not set scopes more details see opt --scope\n");
 
 
-    if(service_ctx.get_profiles().empty())
-        onvifDaemon.daemon_error_exit("Error: not set no one profile more details see --help\n");
-}
+//    if(service_ctx.get_profiles().empty())
+//        onvifDaemon.daemon_error_exit("Error: not set no one profile more details see --help\n");
+//}
 
 
-void init_gsoap(void)
-{
-    soap = soap_new();
+//void init_gsoap(void)
+//{
+//    soap = soap_new();
 
-    if(!soap)
-        onvifDaemon.daemon_error_exit("Can't get mem for SOAP\n");
-
-
-    soap->bind_flags = SO_REUSEADDR;
-
-    if( !soap_valid_socket(soap_bind(soap, NULL, service_ctx.port, 10)) )
-    {
-        soap_stream_fault(soap, std::cerr);
-        exit(EXIT_FAILURE);
-    }
-
-    soap->send_timeout = 3; // timeout in sec
-    soap->recv_timeout = 3; // timeout in sec
+//    if(!soap)
+//        onvifDaemon.daemon_error_exit("Can't get mem for SOAP\n");
 
 
-    //save pointer of service_ctx in soap
-    soap->user = (void*)&service_ctx;
-}
+//    soap->bind_flags = SO_REUSEADDR;
+
+//    if( !soap_valid_socket(soap_bind(soap, NULL, service_ctx.port, 10)) )
+//    {
+//        soap_stream_fault(soap, std::cerr);
+//        exit(EXIT_FAILURE);
+//    }
+
+//    soap->send_timeout = 3; // timeout in sec
+//    soap->recv_timeout = 3; // timeout in sec
 
 
-void init(void *data)
-{
-    UNUSED(data);
-    init_signals();
-    check_service_ctx();
-    init_gsoap();
-}
+//    //save pointer of service_ctx in soap
+//    soap->user = (void*)&service_ctx;
+//}
+
+
+//void init(void *data)
+//{
+//    UNUSED(data);
+//    init_signals();
+//    check_service_ctx();
+//    init_gsoap();
+//}
 
 
 int main(int argc, char *argv[])
 {
+
     arms::signals::registerThreadInterruptSignal();
     // Force STDIO to display debugging messages
     
@@ -274,7 +352,7 @@ int main(int argc, char *argv[])
     api::StreamSettings settings;
     arms::log<arms::LOG_CRITICAL>(settings.toJsonString());
     
-    onvifDaemon.daemonize2(init, NULL);
+//    onvifDaemon.daemonize2(init, NULL);
 
     // Set up two RTSP test card streams to run forever
     arms::logger::setupLogging(onvifDaemon.GetDaemonInfo().get_logLevel(), onvifDaemon.GetDaemonInfo().get_logAsync(), onvifDaemon.GetDaemonInfo().get_logFile(), onvifDaemon.GetDaemonInfo().get_logFileSizeMb(), onvifDaemon.GetDaemonInfo().get_logFileCount());
@@ -303,34 +381,34 @@ int main(int argc, char *argv[])
         threads.push_back(std::thread(&RTSPStream::InitRtspStream, s, it->second.get_tcpPort(), it->second.get_rtspUrl()));
     }
 
+    GSoapInstance *gSoapInstance = new GSoapInstance(service_ctx);
 
+//    FOREACH_SERVICE(DECLARE_SERVICE, soap)
 
-    FOREACH_SERVICE(DECLARE_SERVICE, soap)
+//    while( true )
+//    {
+//        // wait new client
+//        if( !soap_valid_socket(soap_accept(soap)) )
+//        {
+//            arms::log<arms::LOG_DEBUG>("SOAP Valid Socket");
+//            soap_stream_fault(soap, std::cerr);
+//            return EXIT_FAILURE;
+//        }
 
-    while( true )
-    {
-        // wait new client
-        if( !soap_valid_socket(soap_accept(soap)) )
-        {
-            arms::log<arms::LOG_DEBUG>("SOAP Valid Socket");
-            soap_stream_fault(soap, std::cerr);
-            return EXIT_FAILURE;
-        }
+//        // process service
+//        if( soap_begin_serve(soap) )
+//        {
+//            soap_stream_fault(soap, std::cerr);
+//        }
+//        FOREACH_SERVICE(DISPATCH_SERVICE, soap)
+//        else
+//        {
+//            arms::log<arms::LOG_DEBUG>("Unknown service");
+//        }
 
-        // process service
-        if( soap_begin_serve(soap) )
-        {
-            soap_stream_fault(soap, std::cerr);
-        }
-        FOREACH_SERVICE(DISPATCH_SERVICE, soap)
-        else
-        {
-            arms::log<arms::LOG_DEBUG>("Unknown service");
-        }
-
-        soap_destroy(soap); // delete managed C++ objects
-        soap_end(soap);     // delete managed memory
-    }
+//        soap_destroy(soap); // delete managed C++ objects
+//        soap_end(soap);     // delete managed memory
+//    }
 
 
     return EXIT_FAILURE; // Error, normal exit from the main loop only through the signal handler.
