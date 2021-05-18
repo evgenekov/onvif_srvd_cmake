@@ -71,6 +71,7 @@ public:
 
     //struct soap getSoapContext() { return *soap; }
     void runSoapInstance();
+    void checkServiceCtx();
 
 private:
     struct soap *soapInstance;
@@ -98,12 +99,16 @@ GSoapInstance::GSoapInstance(ServiceContext service_ctx) : serviceCtx(service_ct
 
     //save pointer of service_ctx in soap
     soapInstance->user = (void*)&serviceCtx;
+
+    //verify serviceCtx has been stored in the class.
+    checkServiceCtx();
 }
 
 GSoapInstance::~GSoapInstance()
 {
     soap_destroy(soapInstance); // delete managed C++ objects
     soap_end(soapInstance);     // delete managed memory
+    soap_free(soapInstance);    // free the context
 }
 
 void GSoapInstance::runSoapInstance()
@@ -137,67 +142,23 @@ void GSoapInstance::runSoapInstance()
     }
 }
 
+void GSoapInstance::checkServiceCtx(void)
+{
+    if(serviceCtx.eth_ifs.empty())
+        throw std::runtime_error("Error: not set no one ehternet interface more details see opt --ifs\n");
 
-//static struct soap *soap;
+
+    if(serviceCtx.scopes.empty())
+        throw std::runtime_error("Error: not set scopes more details see opt --scope\n");
+
+
+    if(serviceCtx.get_profiles().empty())
+        throw std::runtime_error("Error: not set no one profile more details see --help\n");
+}
 
 ServiceContext service_ctx;
 RTSPStream rtspStreams;
 Daemon onvifDaemon;
-
-
-
-//void daemon_exit_handler(int sig)
-//{
-//    //Here we release resources
-
-//    UNUSED(sig);
-//    soap_destroy(soap); // delete managed C++ objects
-//    soap_end(soap);     // delete managed memory
-//    soap_free(soap);    // free the context
-
-
-//    unlink(onvifDaemon.GetDaemonInfo().get_pidFile().c_str());
-
-
-//    exit(EXIT_SUCCESS); // good job (we interrupted (finished) main loop)
-//}
-
-
-//void init_signals(void)
-//{
-//    onvifDaemon.set_sig_handler(SIGINT,  daemon_exit_handler); //for Ctlr-C in terminal for debug (in debug mode)
-//    onvifDaemon.set_sig_handler(SIGTERM, daemon_exit_handler);
-
-//    signal(SIGCHLD, SIG_IGN); // ignore child
-//    signal(SIGTSTP, SIG_IGN); // ignore tty signals
-//    signal(SIGTTOU, SIG_IGN);
-//    signal(SIGTTIN, SIG_IGN);
-//    signal(SIGHUP,  SIG_IGN);
-//}
-
-
-const char* get_cfg_string(const char* setting, config_t config)
-{
-    const char *str;
-    if(!config_lookup_string(&config, setting, &str))
-    {
-        DEBUG_MSG("No value found in config for %s.\n", setting);
-        str = NULL;
-    }
-    return str;
-}
-
-
-int get_cfg_int(const char* setting, config_t config)
-{
-    int value;
-    if(!config_lookup_int(&config, setting, &value))
-    {
-        DEBUG_MSG("No value found in config for %s.\n", setting);
-        value = 0;
-    }
-    return value;
-}
 
 
 void processing_cfg(Configuration configStruct)
@@ -283,55 +244,6 @@ void processing_cfg(Configuration configStruct)
 }
 
 
-//void check_service_ctx(void)
-//{
-//    if(service_ctx.eth_ifs.empty())
-//        onvifDaemon.daemon_error_exit("Error: not set no one ehternet interface more details see opt --ifs\n");
-
-
-//    if(service_ctx.scopes.empty())
-//        onvifDaemon.daemon_error_exit("Error: not set scopes more details see opt --scope\n");
-
-
-//    if(service_ctx.get_profiles().empty())
-//        onvifDaemon.daemon_error_exit("Error: not set no one profile more details see --help\n");
-//}
-
-
-//void init_gsoap(void)
-//{
-//    soap = soap_new();
-
-//    if(!soap)
-//        onvifDaemon.daemon_error_exit("Can't get mem for SOAP\n");
-
-
-//    soap->bind_flags = SO_REUSEADDR;
-
-//    if( !soap_valid_socket(soap_bind(soap, NULL, service_ctx.port, 10)) )
-//    {
-//        soap_stream_fault(soap, std::cerr);
-//        exit(EXIT_FAILURE);
-//    }
-
-//    soap->send_timeout = 3; // timeout in sec
-//    soap->recv_timeout = 3; // timeout in sec
-
-
-//    //save pointer of service_ctx in soap
-//    soap->user = (void*)&service_ctx;
-//}
-
-
-//void init(void *data)
-//{
-//    UNUSED(data);
-//    init_signals();
-//    check_service_ctx();
-//    init_gsoap();
-//}
-
-
 int main(int argc, char *argv[])
 {
 
@@ -352,8 +264,6 @@ int main(int argc, char *argv[])
     api::StreamSettings settings;
     arms::log<arms::LOG_CRITICAL>(settings.toJsonString());
     
-//    onvifDaemon.daemonize2(init, NULL);
-
     // Set up two RTSP test card streams to run forever
     arms::logger::setupLogging(onvifDaemon.GetDaemonInfo().get_logLevel(), onvifDaemon.GetDaemonInfo().get_logAsync(), onvifDaemon.GetDaemonInfo().get_logFile(), onvifDaemon.GetDaemonInfo().get_logFileSizeMb(), onvifDaemon.GetDaemonInfo().get_logFileCount());
     arms::log<arms::LOG_INFO>("Logging Enabled");
@@ -383,32 +293,6 @@ int main(int argc, char *argv[])
 
     GSoapInstance gSoapInstance(service_ctx);
     gSoapInstance.runSoapInstance();
-//    FOREACH_SERVICE(DECLARE_SERVICE, soap)
-
-//    while( true )
-//    {
-//        // wait new client
-//        if( !soap_valid_socket(soap_accept(soap)) )
-//        {
-//            arms::log<arms::LOG_DEBUG>("SOAP Valid Socket");
-//            soap_stream_fault(soap, std::cerr);
-//            return EXIT_FAILURE;
-//        }
-
-//        // process service
-//        if( soap_begin_serve(soap) )
-//        {
-//            soap_stream_fault(soap, std::cerr);
-//        }
-//        FOREACH_SERVICE(DISPATCH_SERVICE, soap)
-//        else
-//        {
-//            arms::log<arms::LOG_DEBUG>("Unknown service");
-//        }
-
-//        soap_destroy(soap); // delete managed C++ objects
-//        soap_end(soap);     // delete managed memory
-//    }
 
 
     return EXIT_FAILURE; // Error, normal exit from the main loop only through the signal handler.
