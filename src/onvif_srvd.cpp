@@ -62,6 +62,34 @@
                     soap_stream_fault(soap, std::cerr);                  \
                 }
 
+struct GSoapWrapper
+{
+    GSoapWrapper()
+        : ptr{soap_new()}
+    {
+
+    }
+
+    soap const * getSoapPtr() const
+    {
+        return ptr.get();
+    }
+
+    soap * getSoapPtr()
+    {
+        return ptr.get();
+    }
+
+    ~GSoapWrapper()
+    {
+        soap_destroy(ptr.get()); // delete managed C++ objects
+        soap_end(ptr.get());     // delete managed memory
+        soap_free(ptr.get());    // free the context
+    }
+
+private:
+    std::unique_ptr<soap> ptr;
+};
 
 class GSoapInstance
 {
@@ -74,31 +102,34 @@ public:
     void checkServiceCtx();
 
 private:
-    struct soap *soapInstance;
+    //std::unique_ptr<struct soap> soapInstanceUnq;
+    //struct soap *soapInstance;
     ServiceContext serviceCtx;
+    GSoapWrapper gSoap;
 };
 
 GSoapInstance::GSoapInstance(ServiceContext service_ctx) : serviceCtx(service_ctx)
 {
-    soapInstance = soap_new();
 
-    if(!soapInstance)
+
+
+    if(!gSoap.getSoapPtr())
         throw std::out_of_range("soap context is empty");
 
-    soapInstance->bind_flags = SO_REUSEADDR;
+    gSoap.getSoapPtr()->bind_flags = SO_REUSEADDR;
 
-    if( !soap_valid_socket(soap_bind(soapInstance, NULL, serviceCtx.port, 10)) )
+    if( !soap_valid_socket(soap_bind(gSoap.getSoapPtr(), NULL, serviceCtx.port, 10)) )
     {
-        soap_stream_fault(soapInstance, std::cerr);
+        soap_stream_fault(gSoap.getSoapPtr(), std::cerr);
         exit(EXIT_FAILURE);
     }
 
-    soapInstance->send_timeout = 3; // timeout in sec
-    soapInstance->recv_timeout = 3; // timeout in sec
+    gSoap.getSoapPtr()->send_timeout = 3; // timeout in sec
+    gSoap.getSoapPtr()->recv_timeout = 3; // timeout in sec
 
 
     //save pointer of service_ctx in soap
-    soapInstance->user = (void*)&serviceCtx;
+    gSoap.getSoapPtr()->user = (void*)&serviceCtx;
 
     //verify serviceCtx has been stored in the class.
     checkServiceCtx();
@@ -106,40 +137,38 @@ GSoapInstance::GSoapInstance(ServiceContext service_ctx) : serviceCtx(service_ct
 
 GSoapInstance::~GSoapInstance()
 {
-    soap_destroy(soapInstance); // delete managed C++ objects
-    soap_end(soapInstance);     // delete managed memory
-    soap_free(soapInstance);    // free the context
+    return;
 }
 
 void GSoapInstance::runSoapInstance()
 {
-    FOREACH_SERVICE(DECLARE_SERVICE, soapInstance)
+    FOREACH_SERVICE(DECLARE_SERVICE, gSoap.getSoapPtr())
 
     while( true )
     {
 
         // wait new client
-        if( !soap_valid_socket(soap_accept(soapInstance)) )
+        if( !soap_valid_socket(soap_accept(gSoap.getSoapPtr())) )
         {
             arms::log<arms::LOG_DEBUG>("SOAP Valid Socket");
-            soap_stream_fault(soapInstance, std::cerr);
+            soap_stream_fault(gSoap.getSoapPtr(), std::cerr);
             throw std::invalid_argument("gSoap invalid socket");
         }
 
         // process service
-        if( soap_begin_serve(soapInstance) )
+        if( soap_begin_serve(gSoap.getSoapPtr()) )
         {
-            soap_stream_fault(soapInstance, std::cerr);
+            soap_stream_fault(gSoap.getSoapPtr(), std::cerr);
         }
-        FOREACH_SERVICE(DISPATCH_SERVICE, soapInstance)
+        FOREACH_SERVICE(DISPATCH_SERVICE, gSoap.getSoapPtr())
         else
         {
             arms::log<arms::LOG_DEBUG>("Unknown service");
             throw std::runtime_error("Unknown service");
         }
 
-        soap_destroy(soapInstance); // delete managed C++ objects
-        soap_end(soapInstance);     // delete managed memory
+        soap_destroy(gSoap.getSoapPtr()); // delete managed C++ objects
+        soap_end(gSoap.getSoapPtr());     // delete managed memory
     }
 }
 
