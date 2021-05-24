@@ -71,7 +71,7 @@ struct Profiles
             name = "Right_Monitor";
             width = "1024";
             height = "768";
-            url = "rtsp://%s:554/right";
+            url = "rtsp://%s:9554/right";
             snapUrl = "";
             type = "H264";
             break;
@@ -79,7 +79,7 @@ struct Profiles
             name = "Left_Monitor";
             width = "1024";
             height = "768";
-            url = "rtsp://%s:8554/left";
+            url = "rtsp://%s:554/left";
             snapUrl = "";
             type = "H264";
             break;
