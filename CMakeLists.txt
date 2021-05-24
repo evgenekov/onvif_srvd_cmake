@@ -62,7 +62,7 @@ ExternalProject_Add(
     DOWNLOAD_NAME gsoap.zip
     BUILD_BYPRODUCTS ""
     SOURCE_DIR "${GSOAP_SRC_DIR}"
-    BUILD_COMMAND bash -c "${PROJECT_SOURCE_DIR}/build-gsoap.sh"
+    BUILD_COMMAND bash -c "${PROJECT_SOURCE_DIR}/build-gsoap.sh ${PROJECT_SOURCE_DIR}/gsoap-2.8"
     CONFIGURE_COMMAND ""
     INSTALL_COMMAND cmake -E echo "Skipping install step."
     

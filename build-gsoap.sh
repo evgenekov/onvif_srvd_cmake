@@ -1,6 +1,6 @@
 #!/bin/bash
 echo "Building gSOAP"
-GSOAP_INSTALL_DIR="./gsoap-2.8"
+GSOAP_INSTALL_DIR=$1
 GSOAP_DIR=$GSOAP_INSTALL_DIR/gsoap
 GSOAP_IMPORT_DIR=$GSOAP_DIR/import
 
