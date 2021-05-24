@@ -62,10 +62,12 @@
                     soap_stream_fault(soap, std::cerr);                  \
                 }
 
+std::atomic<bool>runThreads(true);
+
 struct GSoapWrapper
 {
     GSoapWrapper()
-        : ptr{soap_new()}
+        : ptr(soap_new(), &soap_free)
     {
 
     }
@@ -84,20 +86,19 @@ struct GSoapWrapper
     {
         soap_destroy(ptr.get()); // delete managed C++ objects
         soap_end(ptr.get());     // delete managed memory
-        soap_free(ptr.get());    // free the context
     }
 
 private:
-    std::unique_ptr<soap> ptr;
+    std::unique_ptr<soap, decltype(&soap_free)> ptr;
 };
 
 class GSoapInstance
 {
 public:
-    GSoapInstance(ServiceContext service_ctx);
+    GSoapInstance(ServiceContext &service_ctx);
     ~GSoapInstance();
 
-    //struct soap getSoapContext() { return *soap; }
+
     void runSoapInstance();
     void checkServiceCtx();
 
@@ -108,10 +109,8 @@ private:
     GSoapWrapper gSoap;
 };
 
-GSoapInstance::GSoapInstance(ServiceContext service_ctx) : serviceCtx(service_ctx)
+GSoapInstance::GSoapInstance(ServiceContext &service_ctx) : serviceCtx(service_ctx)
 {
-
-
 
     if(!gSoap.getSoapPtr())
         throw std::out_of_range("soap context is empty");
@@ -124,6 +123,7 @@ GSoapInstance::GSoapInstance(ServiceContext service_ctx) : serviceCtx(service_ct
         exit(EXIT_FAILURE);
     }
 
+    gSoap.getSoapPtr()->accept_timeout = 1; // timeout in sec
     gSoap.getSoapPtr()->send_timeout = 3; // timeout in sec
     gSoap.getSoapPtr()->recv_timeout = 3; // timeout in sec
 
@@ -144,31 +144,45 @@ void GSoapInstance::runSoapInstance()
 {
     FOREACH_SERVICE(DECLARE_SERVICE, gSoap.getSoapPtr())
 
-    while( true )
+
+    while( runThreads )
     {
+        arms::log<arms::LOG_INFO>("runThreads {}", runThreads);
 
         // wait new client
         if( !soap_valid_socket(soap_accept(gSoap.getSoapPtr())) )
         {
-            arms::log<arms::LOG_DEBUG>("SOAP Valid Socket");
+            arms::log<arms::LOG_INFO>("SOAP Valid Socket");
             soap_stream_fault(gSoap.getSoapPtr(), std::cerr);
-            throw std::invalid_argument("gSoap invalid socket");
+            //throw std::invalid_argument("gSoap invalid socket");
+            arms::log<arms::LOG_INFO>("Leaving if");
+        }
+        else if (gSoap.getSoapPtr()->errnum)
+        {
+            arms::log<arms::LOG_INFO>("Try Again");
+        }
+        arms::log<arms::LOG_INFO>("Entering handling {}", gSoap.getSoapPtr()->errnum);
+        if (gSoap.getSoapPtr()->errnum)
+        {
+            arms::log<arms::LOG_INFO>("Entering handling {}", runThreads);
+            // process service
+            if( soap_begin_serve(gSoap.getSoapPtr()) )
+            {
+                arms::log<arms::LOG_INFO>("Process Service");
+                soap_stream_fault(gSoap.getSoapPtr(), std::cerr);
+            }
+            FOREACH_SERVICE(DISPATCH_SERVICE, gSoap.getSoapPtr())
+            else
+            {
+                arms::log<arms::LOG_INFO>("Unknown service");
+                throw std::runtime_error("Unknown service");
+            }
         }
 
-        // process service
-        if( soap_begin_serve(gSoap.getSoapPtr()) )
-        {
-            soap_stream_fault(gSoap.getSoapPtr(), std::cerr);
-        }
-        FOREACH_SERVICE(DISPATCH_SERVICE, gSoap.getSoapPtr())
-        else
-        {
-            arms::log<arms::LOG_DEBUG>("Unknown service");
-            throw std::runtime_error("Unknown service");
-        }
-
+        arms::log<arms::LOG_INFO>("Soap Destroy");
         soap_destroy(gSoap.getSoapPtr()); // delete managed C++ objects
         soap_end(gSoap.getSoapPtr());     // delete managed memory
+
     }
 }
 
@@ -191,11 +205,9 @@ RTSPStream rtspStreams;
 Daemon onvifDaemon;
 
 
-void processing_cfg(Configuration configStruct)
+void processing_cfg(Configuration const &configStruct)
 {
     // New function to handle config file
-    config_t config;
-    config_init(&config);
     StreamProfile  profile;
     RTSPStreamConfig rtspConfig;
     DaemonInfo daemonInfo;
@@ -285,6 +297,8 @@ int main(int argc, char *argv[])
     
     DEBUG_MSG("processing_cfg\n");
     processing_cfg(configStruct);
+
+
     
 /*    arms::ThreadWarden<RTSPThread, RTSPStreamConfig> thread{rtspStreams.getStream("/right").value()};
     thread.start();
@@ -294,6 +308,7 @@ int main(int argc, char *argv[])
     api::StreamSettings settings;
     arms::log<arms::LOG_CRITICAL>(settings.toJsonString());
 
+
     // Set up two RTSP test card streams to run forever
     arms::logger::setupLogging(onvifDaemon.GetDaemonInfo().get_logLevel(), onvifDaemon.GetDaemonInfo().get_logAsync(), onvifDaemon.GetDaemonInfo().get_logFile(), onvifDaemon.GetDaemonInfo().get_logFileSizeMb(), onvifDaemon.GetDaemonInfo().get_logFileCount());
     arms::log<arms::LOG_INFO>("Logging Enabled");
@@ -302,35 +317,37 @@ int main(int argc, char *argv[])
     arms::log<arms::LOG_INFO>("Found {} Streams", addedStreams.size());
     std::vector<std::thread> threads;
 
-    for( auto it = addedStreams.cbegin(); it != addedStreams.cend(); ++it )
-    {
-        std::stringstream ss;
+//    for( auto it = addedStreams.cbegin(); it != addedStreams.cend(); ++it )
+//    {
+//        std::stringstream ss;
 
-        if(it->second.get_testStream())
-        {
-            ss << "\"( " << it->second.get_testStreamSrc() << it->second.get_pipeline();
-        }
-        else
-        {
-            ss << "\"( -v udpsrc port=" << it->second.get_udpPort() << " ! rtpjitterbuffer"  << it->second.get_pipeline();
-        }
+//        if(it->second.get_testStream())
+//        {
+//            ss << "\"( " << it->second.get_testStreamSrc() << it->second.get_pipeline();
+//        }
+//        else
+//        {
+//            ss << "\"( -v udpsrc port=" << it->second.get_udpPort() << " ! rtpjitterbuffer"  << it->second.get_pipeline();
+//        }
 
-        std::string s = ss.str();
+//        std::string s = ss.str();
 
-        arms::log<arms::LOG_INFO>("Test Stream {}", s);
-        threads.push_back(std::thread(&RTSPStream::InitRtspStream, s, it->second.get_tcpPort(), it->second.get_rtspUrl()));
-    }
+//        arms::log<arms::LOG_INFO>("Test Stream {}", s);
+//        threads.push_back(std::thread(&RTSPStream::InitRtspStream, s, it->second.get_tcpPort(), it->second.get_rtspUrl()));
+//    }
 
     //GSoapInstance gSoapInstance(service_ctx);
     //gSoapInstance.runSoapInstance();
 
-    GSoapInstance * gSoapInstancePtr = new GSoapInstance(service_ctx);
-    threads.push_back((std::thread(&GSoapInstance::runSoapInstance, gSoapInstancePtr)));
+    GSoapInstance gSoapInstance{service_ctx};
+    threads.push_back((std::thread(&GSoapInstance::runSoapInstance, &gSoapInstance)));
 
-    while(1)
-    {
+    sleep(5);
+    runThreads.store(false, std::memory_order_seq_cst);
+    arms::log<arms::LOG_INFO>("Attempting to join thread");
+    threads[0].join();
+    arms::log<arms::LOG_INFO>("Joined");
 
-    }
     //std::thread th(&GSoapInstance::runSoapInstance, gSoapInstancePtr);
 
 
