@@ -6,8 +6,9 @@ if(${CMAKE_VERSION} VERSION_LESS 3.12)
 endif()
 
 set( CMAKE_VERBOSE_MAKEFILE on )
-set(CMAKE_C_COMPILER "gcc")
-set(CMAKE_CXX_COMPILER "g++")
+set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
+set(CMAKE_C_COMPILER "/usr/bin/clang")
+
 
 project(onvif_srvd)
                     
@@ -54,7 +55,35 @@ add_definitions( -DDAEMON_NAME="${DAEMON_NAME}"
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS ON)
-add_compile_options(-O2  -Wall  -pipe)
+
+set(WARN_FLAGS "-Wall -Wno-long-long -Wextra -Wnon-virtual-dtor ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS} -fcf-protection=none")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARN_FLAGS} -fcf-protection=none")
+set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -O2 -mtune=generic")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O2 -mtune=generic")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0")
+
+
+# Remember to set env for both make an running:
+# export TSAN_OPTIONS="second_deadlock_stack=1 tsan-handle-cxx-exceptions=1 ignore_noninstrumented_modules=1"
+# TSAN appears not to work with exceptions, as per some wiki.
+if (0)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fsanitize=thread")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=thread")
+endif ()
+# Requires package LLVM for printing symbols, compaitble with gcc.
+# export ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer
+# export ASAN_OPTIONS=symbolize=1
+# export ASAN_OPTIONS=fast_unwind_on_malloc=0
+if (0)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined -fsanitize-address-use-after-scope")
+endif()
+
+if (0)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=leak")
+endif ()
+
 
 ExternalProject_Add(
     gsoap_src
