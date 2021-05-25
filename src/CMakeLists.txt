@@ -13,18 +13,6 @@ set( SRCFILES
          ${SRC_DIR}/rtsp-streams.cpp
          ${SRC_DIR}/Configuration.cpp
          ${SRC_DIR}/ConfigLoader.cpp
-         ${PROJECT_SOURCE_DIR}/generated/soapDeviceBindingService.cpp
-         ${PROJECT_SOURCE_DIR}/generated/soapMediaBindingService.cpp
-         ${PROJECT_SOURCE_DIR}/generated/soapPTZBindingService.cpp
-         ${PROJECT_SOURCE_DIR}/generated/soapC.cpp
-         ${GSOAP_PLUGIN_DIR}/wsseapi.c
-         ${GSOAP_PLUGIN_DIR}/mecevp.c
-         ${GSOAP_PLUGIN_DIR}/smdevp.c
-         ${GSOAP_PLUGIN_DIR}/wsaapi.c 
-         ${GSOAP_CUSTOM_DIR}/struct_timeval.c
-         ${GSOAP_DIR}/stdsoap2.cpp
-         ${GSOAP_DIR}/dom.cpp
-         ${GSOAP_CUSTOM_DIR}/duration.c
 )
 
 set( HDRFILES
@@ -47,12 +35,16 @@ set( HDRFILES
 )
 
 set_source_files_properties(${SRCFILES} PROPERTIES LANGUAGE CXX)
+set_source_files_properties(${GENERATED_FILES} PROPERTIES LANGUAGE CXX)
 
 set( CLANG_TOOLS_FILES ${CLANG_TOOLS_FILES} ${SRCFILES} ${HDRFILES} PARENT_SCOPE)
 
+set(ALL_SOURCE ${SRCFILES} ${GENERATED_FILES})
+message(${ALL_SOURCE})
+add_custom_target(gen_gsoap_files DEPENDS ${GENERATED_FILES})
 add_executable(onvif_srvd ${SRCFILES})
-
 add_dependencies(onvif_srvd gsoap_src)
+target_sources(onvif_srvd PUBLIC ${GENERATED_FILES})
 
 
 target_link_libraries(onvif_srvd

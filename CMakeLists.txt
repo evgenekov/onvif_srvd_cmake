@@ -6,8 +6,8 @@ if(${CMAKE_VERSION} VERSION_LESS 3.12)
 endif()
 
 set( CMAKE_VERBOSE_MAKEFILE on )
-set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
-set(CMAKE_C_COMPILER "/usr/bin/clang")
+#set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
+#set(CMAKE_C_COMPILER "/usr/bin/clang")
 
 
 project(onvif_srvd)
@@ -84,12 +84,25 @@ if (0)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=leak")
 endif ()
 
+set(GENERATED_FILES
+         ${PROJECT_SOURCE_DIR}/generated/soapDeviceBindingService.cpp
+         ${PROJECT_SOURCE_DIR}/generated/soapMediaBindingService.cpp
+         ${PROJECT_SOURCE_DIR}/generated/soapPTZBindingService.cpp
+         ${PROJECT_SOURCE_DIR}/generated/soapC.cpp
+         ${GSOAP_PLUGIN_DIR}/wsseapi.c
+         ${GSOAP_PLUGIN_DIR}/mecevp.c
+         ${GSOAP_PLUGIN_DIR}/smdevp.c
+         ${GSOAP_PLUGIN_DIR}/wsaapi.c
+         ${GSOAP_CUSTOM_DIR}/struct_timeval.c
+         ${GSOAP_DIR}/stdsoap2.cpp
+         ${GSOAP_DIR}/dom.cpp
+         ${GSOAP_CUSTOM_DIR}/duration.c)
 
 ExternalProject_Add(
     gsoap_src
     URL ${GSOAP_SRC_URL}
     DOWNLOAD_NAME gsoap.zip
-    BUILD_BYPRODUCTS ""
+    BUILD_BYPRODUCTS "${GENERATED_FILES}"
     SOURCE_DIR "${GSOAP_SRC_DIR}"
     BUILD_COMMAND bash -c "${PROJECT_SOURCE_DIR}/build-gsoap.sh ${PROJECT_SOURCE_DIR}/gsoap-2.8"
     CONFIGURE_COMMAND ""
