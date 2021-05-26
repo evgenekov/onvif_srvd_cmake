@@ -33,6 +33,7 @@ set(SOAPCPP2 "${GSOAP_DIR}/src/soapcpp2")
 set(WSDL2H "${GSOAP_DIR}/wsdl/wsdl2h")
 set(GENERATED_DIR "${PROJECT_SOURCE_DIR}/generated")
 set(SRC_DIR "${PROJECT_SOURCE_DIR}/src")
+set(PATCH_DIR "${PROJECT_SOURCE_DIR}/patches")
 
 set(ARMOURY_SRC "${PROJECT_SOURCE_DIR}/external/armoury/include")
 set(ARMOURY_THIRD_PARTY_SRC "${PROJECT_SOURCE_DIR}/external/armoury/third_party/include")
@@ -104,12 +105,14 @@ ExternalProject_Add(
     DOWNLOAD_NAME gsoap.zip
     BUILD_BYPRODUCTS "${GENERATED_FILES}"
     SOURCE_DIR "${GSOAP_SRC_DIR}"
-    BUILD_COMMAND bash -c "${PROJECT_SOURCE_DIR}/build-gsoap.sh ${PROJECT_SOURCE_DIR}/gsoap-2.8"
+    BUILD_COMMAND bash -c "${PROJECT_SOURCE_DIR}/build-gsoap.sh ${PROJECT_SOURCE_DIR}/gsoap-2.8 ${PATCH_DIR}"
     CONFIGURE_COMMAND ""
     INSTALL_COMMAND cmake -E echo "Skipping install step."
     
     BUILD_IN_SOURCE 1
 )
+
+
 
 
 find_package(PkgConfig REQUIRED)

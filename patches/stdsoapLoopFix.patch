@@ -1,0 +1,33 @@
+--- stdsoap2.cpp	2021-04-15 15:14:19.000000000 +0100
++++ stdsoap2.cpp.new	2021-05-26 15:31:21.894990214 +0100
+@@ -52,6 +52,8 @@
+ --------------------------------------------------------------------------------
+ */
+ 
++#include <armoury/ThreadWarden.hpp>
++
+ #define GSOAP_LIB_VERSION 208113
+ 
+ #ifdef AS400
+@@ -7040,11 +7042,11 @@
+   if ((soap->omode & SOAP_IO_UDP))
+     return soap->socket = soap->master;
+ #endif
+-  for (;;)
++  while (!arms::g_threadInteraction->endWork.check())
+   {
+     if (soap->accept_timeout)
+     {
+-      for (;;)
++      while (!arms::g_threadInteraction->endWork.check())
+       {
+         int r;
+         r = tcp_select(soap, soap->master, SOAP_TCP_SELECT_ALL, soap->accept_timeout);
+@@ -7191,6 +7193,7 @@
+       return SOAP_INVALID_SOCKET;
+     }
+   }
++  return 7;
+ }
+ #endif
+
