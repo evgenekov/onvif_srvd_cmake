@@ -20,10 +20,7 @@
 #include "DeviceBinding.nsmap"
 
 
-RTSPStream rtspStreams;
-Daemon onvifDaemon;
-
-void processing_cfg(Configuration const &configStruct, ServiceContext &service_ctx)
+void processing_cfg(Configuration const &configStruct, ServiceContext &service_ctx, RTSPStream &rtspStreams, Daemon &onvifDaemon)
 {
     // New function to handle config file
     StreamProfile profile;
@@ -104,16 +101,17 @@ void processing_cfg(Configuration const &configStruct, ServiceContext &service_c
 
 int main()
 {
-
     arms::signals::registerThreadInterruptSignal();
-    // Force STDIO to display debugging messages
 
     std::optional<std::string> const configFile{arms::files::findConfigFile("/etc/onvif_srvd/config.cfg")};
     Configuration const configStruct{configFile};
+    ServiceContext service_ctx{};
+    RTSPStream rtspStreams{};
+    Daemon onvifDaemon;
 
     DEBUG_MSG("processing_cfg\n");
-    ServiceContext service_ctx{};
-    processing_cfg(configStruct, service_ctx);
+
+    processing_cfg(configStruct, service_ctx, rtspStreams, onvifDaemon);
 
     api::StreamSettings settings;
     arms::log<arms::LOG_CRITICAL>(settings.toJsonString());
