@@ -61,8 +61,6 @@
         soap_stream_fault(soap, std::cerr);                                                                            \
     }
 
-std::atomic<bool> runThreads(true);
-
 struct GSoapWrapper
 {
     GSoapWrapper() : ptr(soap_new(), &soap_free)
@@ -335,7 +333,6 @@ int main(int argc, char *argv[])
     }
     arms::log<arms::LOG_INFO>("Attempting to stop thread");
     gSoapInstance.stop();
-    runThreads.store(false);
     arms::log<arms::LOG_INFO>("Stopped");
 
     return EXIT_FAILURE; // Error, normal exit from the main loop only through the signal handler.
