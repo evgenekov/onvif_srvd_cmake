@@ -13,6 +13,7 @@ set( SRCFILES
          ${SRC_DIR}/rtsp-streams.cpp
          ${SRC_DIR}/Configuration.cpp
          ${SRC_DIR}/ConfigLoader.cpp
+         ${SRC_DIR}/GSoapService.cpp
 )
 
 set( HDRFILES
@@ -26,6 +27,7 @@ set( HDRFILES
          ${SRC_DIR}/rtsp-streams.h
          ${SRC_DIR}/ConfigLoader.hpp
          ${SRC_DIR}/Configuration.hpp
+         ${SRC_DIR}/GSoapService.hpp
          ${PROJECT_SOURCE_DIR}/generated/onvif.h
          ${PROJECT_SOURCE_DIR}/generated/soapDeviceBindingService.h
          ${PROJECT_SOURCE_DIR}/generated/soapMediaBindingService.h
