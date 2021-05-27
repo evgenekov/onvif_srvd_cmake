@@ -154,39 +154,26 @@ GSoapInstance::~GSoapInstance()
 
 int GSoapInstance::work()
 {
-    arms::log<arms::LOG_INFO>("runThreads {}", runThreads);
-
     // wait new client
     if (!soap_valid_socket(soap_accept(gSoap.getSoapPtr())))
         sleep(20);
     {
-        arms::log<arms::LOG_INFO>("SOAP Valid Socket");
+        arms::log<arms::LOG_INFO>("SOAP Invalid Socket");
         soap_stream_fault(gSoap.getSoapPtr(), std::cerr);
-        // throw std::invalid_argument("gSoap invalid socket");
-        arms::log<arms::LOG_INFO>("Leaving if");
     }
-    // else if (gSoap.getSoapPtr()->errnum)
+
+    // process service
+    if (soap_begin_serve(gSoap.getSoapPtr()))
     {
-        arms::log<arms::LOG_INFO>("Try Again");
+        arms::log<arms::LOG_INFO>("Process Service");
+        soap_stream_fault(gSoap.getSoapPtr(), std::cerr);
     }
-    arms::log<arms::LOG_INFO>("Entering handling {}", gSoap.getSoapPtr()->errnum);
-    //    if (gSoap.getSoapPtr()->errnum)
-    //    {
-    //        arms::log<arms::LOG_INFO>("Entering handling {}", runThreads);
-    //        // process service
-    //        if (soap_begin_serve(gSoap.getSoapPtr()))
-    //        {
-    //            arms::log<arms::LOG_INFO>("Process Service");
-    //            soap_stream_fault(gSoap.getSoapPtr(), std::cerr);
-    //        }
-    //        FOREACH_SERVICE(DISPATCH_SERVICE, gSoap.getSoapPtr())
-    //        else
-    //        {
-    //            arms::log<arms::LOG_INFO>("Unknown service");
-    //            return 1;
-    //            // throw std::runtime_error("Unknown service");
-    //        }
-    //    }
+    FOREACH_SERVICE(DISPATCH_SERVICE, gSoap.getSoapPtr())
+    else
+    {
+        arms::log<arms::LOG_INFO>("Unknown service");
+        return 1;
+    }
 
     arms::log<arms::LOG_INFO>("Soap Destroy");
     soap_destroy(gSoap.getSoapPtr()); // delete managed C++ objects
@@ -301,12 +288,6 @@ int main(int argc, char *argv[])
     ServiceContext service_ctx{};
     processing_cfg(configStruct, service_ctx);
 
-    /*    arms::ThreadWarden<RTSPThread, RTSPStreamConfig> thread{rtspStreams.getStream("/right").value()};
-        thread.start();
-        sleep(3);
-        thread.stop()*/
-    ;
-
     api::StreamSettings settings;
     arms::log<arms::LOG_CRITICAL>(settings.toJsonString());
 
@@ -342,13 +323,10 @@ int main(int argc, char *argv[])
     //        it->second.get_rtspUrl()));
     //    }
 
-    // GSoapInstance gSoapInstance(service_ctx);
-    // gSoapInstance.runSoapInstance();
+
     arms::signals::registerThreadInterruptSignal();
     arms::ThreadWarden<GSoapInstance, ServiceContext> gSoapInstance{service_ctx};
     gSoapInstance.start();
-
-    // threads.push_back((std::thread(&GSoapInstance::runSoapInstance, &gSoapInstance)));
 
     for (int i{}; i < 10; ++i)
     {
@@ -357,12 +335,8 @@ int main(int argc, char *argv[])
     }
     arms::log<arms::LOG_INFO>("Attempting to stop thread");
     gSoapInstance.stop();
-
     runThreads.store(false);
-
     arms::log<arms::LOG_INFO>("Stopped");
-
-    // std::thread th(&GSoapInstance::runSoapInstance, gSoapInstancePtr);
 
     return EXIT_FAILURE; // Error, normal exit from the main loop only through the signal handler.
 }
