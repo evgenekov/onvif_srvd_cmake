@@ -125,35 +125,35 @@ int main()
 
     auto addedStreams = rtspStreams.get_streams();
     arms::log<arms::LOG_INFO>("Found {} Streams", addedStreams.size());
-    // std::vector<std::thread> threads;
+     std::vector<std::thread> threads;
 
-    //    for( auto it = addedStreams.cbegin(); it != addedStreams.cend(); ++it )
-    //    {
-    //        std::stringstream ss;
+        for( auto it = addedStreams.cbegin(); it != addedStreams.cend(); ++it )
+        {
+            std::stringstream ss;
 
-    //        if(it->second.get_testStream())
-    //        {
-    //            ss << "\"( " << it->second.get_testStreamSrc() << it->second.get_pipeline();
-    //        }
-    //        else
-    //        {
-    //            ss << "\"( -v udpsrc port=" << it->second.get_udpPort() << " ! rtpjitterbuffer"  <<
-    //            it->second.get_pipeline();
-    //        }
+            if(it->second.get_testStream())
+            {
+                ss << "\"( " << it->second.get_testStreamSrc() << it->second.get_pipeline();
+            }
+            else
+            {
+                ss << "\"( -v udpsrc port=" << it->second.get_udpPort() << " ! rtpjitterbuffer"  <<
+                it->second.get_pipeline();
+            }
 
-    //        std::string s = ss.str();
+            std::string s = ss.str();
 
-    //        arms::log<arms::LOG_INFO>("Test Stream {}", s);
-    //        threads.push_back(std::thread(&RTSPStream::InitRtspStream, s, it->second.get_tcpPort(),
-    //        it->second.get_rtspUrl()));
-    //    }
+            arms::log<arms::LOG_INFO>("Test Stream {}", s);
+            threads.push_back(std::thread(&RTSPStream::InitRtspStream, s, it->second.get_tcpPort(),
+            it->second.get_rtspUrl()));
+        }
 
 
     arms::signals::registerThreadInterruptSignal();
     arms::ThreadWarden<GSoapInstance, ServiceContext> gSoapInstance{service_ctx};
     gSoapInstance.start();
 
-    for (int i{}; i < 10; ++i)
+    for (int i{}; i < 100; ++i)
     {
         gSoapInstance.checkAndRestartOnFailure();
         sleep(1);
