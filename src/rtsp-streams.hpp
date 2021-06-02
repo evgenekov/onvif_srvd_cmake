@@ -8,53 +8,12 @@
 #include <armoury/logger.hpp>
 #include <armoury/ThreadWarden.hpp>
 #include <armoury/json.hpp>
+#include <Configuration.hpp>
 
 #include <gst/gst.h>
 #include <gst/rtsp-server/rtsp-server.h>
 
 #define DEFAULT_RTSP_PORT "8554"
-
-
-class RTSPStreamConfig
-{
-public:
-
-    RTSPStreamConfig() { clear(); }
-
-    std::string  get_pipeline      (void) const { return pipeline;     }
-    std::string  get_udpPort       (void) const { return udpPort;      }
-    std::string  get_tcpPort       (void) const { return tcpPort;      }
-    std::string  get_rtspUrl       (void) const { return rtspUrl;      }
-    bool         get_testStream    (void) const { return testStream;   }
-    std::string  get_testStreamSrc (void) const { return testStreamSrc;}
-
-    //methods for parsing opt from cmd
-    bool set_pipeline      (const char *new_val);
-    bool set_udpPort       (const char *new_val);
-    bool set_tcpPort       (const char *new_val);
-    bool set_rtspUrl       (const char *new_val);
-    bool set_testStream    (int         new_val);
-    bool set_testStreamSrc (const char *new_val);
-
-
-    std::string get_str_err()  const { return str_err;         }
-    const char* get_cstr_err() const { return str_err.c_str(); }
-
-    void clear(void);
-    bool is_valid(void) const;
-
-
-private:
-
-    std::string pipeline;
-    std::string udpPort;
-    std::string tcpPort;
-    std::string rtspUrl;
-    bool testStream;
-    std::string testStreamSrc;
-
-    std::string  str_err;
-};
 
 
 template <typename T>
@@ -151,29 +110,6 @@ private:
 } // namespace api
 
 
-class RTSPStream
-{
-public:
-
-    bool AddStream(const RTSPStreamConfig& stream);
-
-    std::string get_str_err() const { return str_err;         }
-    const char* get_cstr_err()const { return str_err.c_str(); }
-    const std::map<std::string, RTSPStreamConfig> &get_streams(void) { return streams; }
-    std::optional<RTSPStreamConfig> getStream(std::string streamName) const
-    {
-        if (streams.count(streamName)){
-            return streams.at(streamName);
-        }
-        return std::nullopt;
-    }
-
-
-private:
-    std::map<std::string, RTSPStreamConfig> streams;
-    std::string  str_err;
-};
-
 
 class GStreamerRTSPLoop
 {
@@ -206,19 +142,19 @@ class GStreamerRTSPLoop
 class GStreamerRTSP
 {
 public:
-    GStreamerRTSP(RTSPStreamConfig stream)
+    GStreamerRTSP(RTSPStreams stream)
     {
         // Build stream URI
         std::stringstream ss;
 
-        if(stream.get_testStream())
+        if(stream.testStream)
         {
-            ss << "\"( " << stream.get_testStreamSrc() << stream.get_pipeline();
+            ss << "\"( " << stream.testStreamSrc << stream.pipeline;
         }
         else
         {
-            ss << "\"( -v udpsrc port=" << stream.get_udpPort() << " ! rtpjitterbuffer"  <<
-            stream.get_pipeline();
+            ss << "\"( -v udpsrc port=" << stream.udpPort << " ! rtpjitterbuffer"  <<
+            stream.pipeline;
         }
 
         std::string s = ss.str();
@@ -237,7 +173,7 @@ public:
 
         /* create a server instance */
         server = gst_rtsp_server_new ();
-        g_object_set (server.get(), "service", stream.get_tcpPort().c_str(), NULL);
+        g_object_set (server.get(), "service", stream.tcpPort.c_str(), NULL);
 
         /* get the mount points for this server, every server has a default object
          * that be used to map uri mount points to media factories */
@@ -252,13 +188,13 @@ public:
         gst_rtsp_media_factory_set_shared (factory.get(), TRUE);
 
         /* attach the test factory to the /test url */
-        gst_rtsp_mount_points_add_factory (mounts.get(), stream.get_rtspUrl().c_str(), factory.get());
+        gst_rtsp_mount_points_add_factory (mounts.get(), stream.rtspUrl.c_str(), factory.get());
 
         /* attach the server to the default maincontext */
         gst_rtsp_server_attach (server.get(), NULL);
 
         /* start serving */
-        arms::log<arms::LOG_INFO>("stream ready at rtsp://127.0.0.1:{}{}", stream.get_tcpPort(), stream.get_rtspUrl());
+        arms::log<arms::LOG_INFO>("stream ready at rtsp://127.0.0.1:{}{}", stream.tcpPort, stream.rtspUrl);
 
         {
         auto [locked] = arms::makeLocked<arms::WriteLock>(m_loopThread.inputData);

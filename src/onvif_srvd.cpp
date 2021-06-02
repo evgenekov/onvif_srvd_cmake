@@ -21,11 +21,10 @@
 #include "DeviceBinding.nsmap"
 
 
-void processing_cfg(Configuration const &configStruct, ServiceContext &service_ctx, RTSPStream &rtspStreams, Daemon &onvifDaemon)
+void processing_cfg(Configuration const &configStruct, ServiceContext &service_ctx, Daemon &onvifDaemon)
 {
     // New function to handle config file
     StreamProfile profile;
-    RTSPStreamConfig rtspConfig;
     DaemonInfo daemonInfo;
 
     // Get Daemon info
@@ -81,23 +80,6 @@ void processing_cfg(Configuration const &configStruct, ServiceContext &service_c
         DEBUG_MSG("configured Media Profile %s\n", profile.get_name().c_str());
         profile.clear();
     }
-
-    // RTSP Streaming Configuration
-    for (auto it = begin(configStruct.rtspStreams); it != end(configStruct.rtspStreams); ++it)
-    {
-        rtspConfig.set_pipeline(it->pipeline.c_str());
-        rtspConfig.set_udpPort(it->udpPort.c_str());
-        rtspConfig.set_tcpPort(it->tcpPort.c_str());
-        rtspConfig.set_rtspUrl(it->rtspUrl.c_str());
-        rtspConfig.set_testStream(it->testStream);
-        rtspConfig.set_testStreamSrc(it->testStreamSrc.c_str());
-
-        if (!rtspStreams.AddStream(rtspConfig))
-            onvifDaemon.daemon_error_exit("Can't add Stream: %s\n", rtspStreams.get_cstr_err());
-
-        DEBUG_MSG("configured Media Profile %s\n", rtspConfig.get_rtspUrl().c_str());
-        rtspConfig.clear();
-    }
 }
 
 int main()
@@ -107,14 +89,13 @@ int main()
     std::optional<std::string> const configFile{arms::files::findConfigFile("/etc/onvif_srvd/config.cfg")};
     Configuration const configStruct{configFile};
     ServiceContext service_ctx{};
-    RTSPStream rtspStreams{};
     Daemon onvifDaemon;
 
     std::list<GStreamerRTSP> listOfStreams;
     arms::signals::registerThreadInterruptSignal();
 
     DEBUG_MSG("processing_cfg\n");
-    processing_cfg(configStruct, service_ctx, rtspStreams, onvifDaemon);
+    processing_cfg(configStruct, service_ctx, onvifDaemon);
 
     // Set up two RTSP test card streams to run forever
     arms::logger::setupLogging(onvifDaemon.GetDaemonInfo().get_logLevel(), onvifDaemon.GetDaemonInfo().get_logAsync(),
@@ -123,13 +104,12 @@ int main()
                                onvifDaemon.GetDaemonInfo().get_logFileCount());
     arms::log<arms::LOG_INFO>("Logging Enabled");
 
-    auto addedStreams = rtspStreams.get_streams();
-    arms::log<arms::LOG_INFO>("Found {} Streams", addedStreams.size());
+    arms::log<arms::LOG_INFO>("Found {} Streams in configStruct", configStruct.rtspStreams.size());
 
     // Create a thread for each stream and store it in a list
-    for( auto it = addedStreams.cbegin(); it != addedStreams.cend(); ++it )
+    for( auto itr : configStruct.rtspStreams )
     {
-        listOfStreams.emplace_back(it->second);
+        listOfStreams.emplace_back(itr);
     }
 
     arms::ThreadWarden<GSoapInstance, ServiceContext> gSoapInstance{service_ctx};

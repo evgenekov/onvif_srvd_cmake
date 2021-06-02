@@ -10,7 +10,6 @@ set( SRCFILES
          ${SRC_DIR}/ServiceMedia.cpp
          ${SRC_DIR}/ServicePTZ.cpp
          ${SRC_DIR}/mosquitto_handler.c
-         ${SRC_DIR}/rtsp-streams.cpp
          ${SRC_DIR}/Configuration.cpp
          ${SRC_DIR}/ConfigLoader.cpp
          ${SRC_DIR}/GSoapService.cpp
