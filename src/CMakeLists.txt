@@ -24,7 +24,7 @@ set( HDRFILES
          ${SRC_DIR}/smacros.h
          ${SRC_DIR}/stools.h
          ${SRC_DIR}/mosquitto_handler.h
-         ${SRC_DIR}/rtsp-streams.h
+         ${SRC_DIR}/rtsp-streams.hpp
          ${SRC_DIR}/ConfigLoader.hpp
          ${SRC_DIR}/Configuration.hpp
          ${SRC_DIR}/GSoapService.hpp

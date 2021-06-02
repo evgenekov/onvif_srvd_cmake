@@ -9,13 +9,14 @@
 #include <stdlib.h>
 #include <string>
 #include <unistd.h>
+#include <list>
 
 #include "ConfigLoader.hpp"
 #include "Configuration.hpp"
 #include "GSoapService.hpp"
 #include "armoury/ThreadWarden.hpp"
 #include "daemon.hpp"
-#include "rtsp-streams.h"
+#include "rtsp-streams.hpp"
 #include "smacros.h"
 #include "DeviceBinding.nsmap"
 
@@ -109,12 +110,11 @@ int main()
     RTSPStream rtspStreams{};
     Daemon onvifDaemon;
 
+    std::list<GStreamerRTSP> listOfStreams;
+    arms::signals::registerThreadInterruptSignal();
+
     DEBUG_MSG("processing_cfg\n");
-
     processing_cfg(configStruct, service_ctx, rtspStreams, onvifDaemon);
-
-    api::StreamSettings settings;
-    arms::log<arms::LOG_CRITICAL>(settings.toJsonString());
 
     // Set up two RTSP test card streams to run forever
     arms::logger::setupLogging(onvifDaemon.GetDaemonInfo().get_logLevel(), onvifDaemon.GetDaemonInfo().get_logAsync(),
@@ -125,40 +125,22 @@ int main()
 
     auto addedStreams = rtspStreams.get_streams();
     arms::log<arms::LOG_INFO>("Found {} Streams", addedStreams.size());
-     std::vector<std::thread> threads;
 
-        for( auto it = addedStreams.cbegin(); it != addedStreams.cend(); ++it )
-        {
-            std::stringstream ss;
+    // Create a thread for each stream and store it in a list
+    for( auto it = addedStreams.cbegin(); it != addedStreams.cend(); ++it )
+    {
+        listOfStreams.emplace_back(it->second);
+    }
 
-            if(it->second.get_testStream())
-            {
-                ss << "\"( " << it->second.get_testStreamSrc() << it->second.get_pipeline();
-            }
-            else
-            {
-                ss << "\"( -v udpsrc port=" << it->second.get_udpPort() << " ! rtpjitterbuffer"  <<
-                it->second.get_pipeline();
-            }
-
-            std::string s = ss.str();
-
-            arms::log<arms::LOG_INFO>("Test Stream {}", s);
-            threads.push_back(std::thread(&RTSPStream::InitRtspStream, s, it->second.get_tcpPort(),
-            it->second.get_rtspUrl()));
-        }
-
-
-    arms::signals::registerThreadInterruptSignal();
     arms::ThreadWarden<GSoapInstance, ServiceContext> gSoapInstance{service_ctx};
     gSoapInstance.start();
 
-    for (int i{}; i < 100; ++i)
+    for (int i{}; i < 50; ++i)
     {
         gSoapInstance.checkAndRestartOnFailure();
         sleep(1);
     }
-    arms::log<arms::LOG_INFO>("Attempting to stop thread");
+
     gSoapInstance.stop();
     arms::log<arms::LOG_INFO>("Stopped");
 
