@@ -157,58 +157,9 @@ bool RTSPStream::AddStream(const RTSPStreamConfig& stream)
         return false;
     }
 
-
     streams[stream.get_rtspUrl()] = stream;
     return true;
 }
 
 
-void RTSPStream::InitRtspStream(std::string pipelineStr, std::string portStr, std::string uriStr)
-{
-  // Convert std::strings to const char* for C compatibility
-  const char* pipeline = pipelineStr.c_str();
-  const char* port = portStr.c_str();
-  const char* uri = uriStr.c_str();
-
-  GError *error = NULL;
-  if(!gst_init_check(NULL, NULL, &error))
-      arms::log<arms::LOG_INFO>("Didn't set up");
-  if(error)
-  {
-    g_print(error->message, "%s");
-    g_clear_error (&error);
-  }
-
-  GObjWrapper<GMainLoop> loop = g_main_loop_new (NULL, FALSE);
-
-  /* create a server instance */
-  GObjWrapper<GstRTSPServer> server = gst_rtsp_server_new ();
-  //printf("\n%d\n", gst_rtsp_server_get_backlog(server));
-  g_object_set (server.get(), "service", port, NULL);
-
-  /* get the mount points for this server, every server has a default object
-   * that be used to map uri mount points to media factories */
-  GObjWrapper<GstRTSPMountPoints> mounts = gst_rtsp_server_get_mount_points (server.get());
-
-  /* make a media factory for a test stream. The default media factory can use
-   * gst-launch syntax to create pipelines.
-   * any launch line works as long as it contains elements named pay%d. Each
-   * element with pay%d names will be a stream */
-  GObjWrapper<GstRTSPMediaFactory> factory {gst_rtsp_media_factory_new ()};
-  gst_rtsp_media_factory_set_launch (factory.get(), pipeline);
-  gst_rtsp_media_factory_set_shared (factory.get(), TRUE);
-
-  /* attach the test factory to the /test url */
-  gst_rtsp_mount_points_add_factory (mounts.get(), uri, factory.get());
-
-  /* don't need the ref to the mapper anymore */
-  g_object_unref (mounts.get());
-
-  /* attach the server to the default maincontext */
-  gst_rtsp_server_attach (server.get(), NULL);
-
-  /* start serving */
-  arms::log<arms::LOG_INFO>("stream ready at rtsp://127.0.0.1:{}{}", port, uri);
-  g_main_loop_run (loop.get());
-}
 

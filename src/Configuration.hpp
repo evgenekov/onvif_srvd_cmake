@@ -1,12 +1,11 @@
 #pragma once
 
 #include "ConfigLoader.hpp"
+#include "ServiceContext.h"
 #include "eth_dev_param.h"
 #include <map>
 #include <optional>
 #include <string>
-#include "daemon.h"
-#include "ServiceContext.h"
 
 struct Scopes
 {
@@ -16,15 +15,16 @@ struct Scopes
     Scopes() = default;
     Scopes(libconfig::Setting const &wf)
     {
-        if (wf.isGroup() && wf.lookupValue("scopes_id", scopes_id) &&
-            wf.lookupValue("scopeUri", scopeUri)) {
+        if (wf.isGroup() && wf.lookupValue("scopes_id", scopes_id) && wf.lookupValue("scopeUri", scopeUri))
+        {
             return;
         }
         throw std::runtime_error("scopes config parse error");
     }
-    Scopes(int const id) : scopes_id{ id }
+    Scopes(int const id) : scopes_id{id}
     {
-        switch (id) {
+        switch (id)
+        {
         case 0:
             scopeUri = "onvif://www.onvif.org/name/Combiner-Feed";
             break;
@@ -43,7 +43,7 @@ struct Scopes
 
 struct Profiles
 {
-    int profile_id{ 0 };
+    int profile_id{0};
     std::string name{};
     std::string width{};
     std::string height{};
@@ -54,20 +54,18 @@ struct Profiles
     Profiles() = default;
     Profiles(libconfig::Setting const &wf)
     {
-        if (wf.isGroup() && wf.lookupValue("profile_id", profile_id) &&
-            wf.lookupValue("name", name) &&
-            wf.lookupValue("width", width) &&
-            wf.lookupValue("height", height) &&
-            wf.lookupValue("url", url) &&
-            wf.lookupValue("snapUrl", snapUrl) &&
-            wf.lookupValue("type", type)) {
+        if (wf.isGroup() && wf.lookupValue("profile_id", profile_id) && wf.lookupValue("name", name) &&
+            wf.lookupValue("width", width) && wf.lookupValue("height", height) && wf.lookupValue("url", url) &&
+            wf.lookupValue("snapUrl", snapUrl) && wf.lookupValue("type", type))
+        {
             return;
         }
         throw std::runtime_error("waveform config parse error");
     }
-    Profiles(int const id) : profile_id{ id }
+    Profiles(int const id) : profile_id{id}
     {
-        switch (id) {
+        switch (id)
+        {
         case 0:
             name = "Right_Monitor";
             width = "1024";
@@ -90,7 +88,7 @@ struct Profiles
 
 struct RTSPStreams
 {
-    int rtspstream_id{ 0 };
+    int rtspstream_id{0};
     std::string pipeline{};
     std::string udpPort{};
     std::string tcpPort{};
@@ -101,20 +99,19 @@ struct RTSPStreams
     RTSPStreams() = default;
     RTSPStreams(libconfig::Setting const &wf)
     {
-        if (wf.isGroup() && wf.lookupValue("rtspstream_id", rtspstream_id) &&
-            wf.lookupValue("pipeline", pipeline) &&
-            wf.lookupValue("udpPort", udpPort) &&
-            wf.lookupValue("tcpPort", tcpPort) &&
-            wf.lookupValue("rtspUrl", rtspUrl) &&
-            wf.lookupValue("testStream", testStream) &&
-            wf.lookupValue("testStreamSrc", testStreamSrc)) {
+        if (wf.isGroup() && wf.lookupValue("rtspstream_id", rtspstream_id) && wf.lookupValue("pipeline", pipeline) &&
+            wf.lookupValue("udpPort", udpPort) && wf.lookupValue("tcpPort", tcpPort) &&
+            wf.lookupValue("rtspUrl", rtspUrl) && wf.lookupValue("testStream", testStream) &&
+            wf.lookupValue("testStreamSrc", testStreamSrc))
+        {
             return;
         }
         throw std::runtime_error("waveform config parse error");
     }
-    RTSPStreams(int const id) : rtspstream_id{ id }
+    RTSPStreams(int const id) : rtspstream_id{id}
     {
-        switch (id) {
+        switch (id)
+        {
         case 0:
             pipeline = " ! x264enc ! rtph264pay pt=96 name=pay0 )\"";
             udpPort = "5001";
@@ -142,13 +139,12 @@ struct Configuration
     explicit Configuration(ConfigLoader &loader);
     void loadAllSettings(ConfigLoader &loader);
 
-    daemon_info_t GetDaemonInfo();
     void SetServiceContext(ServiceContext *service_ctx);
 
     // Daemon Info
-    const char * pid_file{"/tmp/onvif_svrd_debug.pid"};
-    const char * logLevel{"info"};
-    const char * logFile{""};
+    const char *pid_file{"/tmp/onvif_svrd_debug.pid"};
+    const char *logLevel{"trace"};
+    const char *logFile{""};
     int logFileSizeMb{0};
     int logFileCount{0};
     bool logAsync{false};
@@ -165,10 +161,9 @@ struct Configuration
     std::string interfaces{"enp5s0"};
     std::string tz_format{"0"};
 
-    std::vector<Scopes> scopes{ Scopes{ 0 }, Scopes{ 1 }, Scopes{ 2 }, Scopes{ 3 } };
-    std::vector<Profiles> profiles{ Profiles{ 0 }, Profiles{ 1 } };
-    std::vector<RTSPStreams> rtspStreams{ RTSPStreams{ 0 }, RTSPStreams{ 1 } };
+    std::vector<Scopes> scopes{Scopes{0}, Scopes{1}, Scopes{2}, Scopes{3}};
+    std::vector<Profiles> profiles{Profiles{0}, Profiles{1}};
+    std::vector<RTSPStreams> rtspStreams{RTSPStreams{0}, RTSPStreams{1}};
 
     std::vector<Eth_Dev_Param> eth_ifs;
-
 };
