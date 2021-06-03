@@ -24,7 +24,6 @@
 void processing_cfg(Configuration const &configStruct, ServiceContext &service_ctx, Daemon &onvifDaemon)
 {
     // New function to handle config file
-    StreamProfile profile;
     DaemonInfo daemonInfo;
 
     // Get Daemon info
@@ -37,49 +36,6 @@ void processing_cfg(Configuration const &configStruct, ServiceContext &service_c
 
     if (!onvifDaemon.SaveConfig(daemonInfo))
         onvifDaemon.daemon_error_exit("Can't save daemon info: %s\n", service_ctx.get_cstr_err());
-
-    DEBUG_MSG("Configured Daemon\n");
-
-    // ONVIF Service Options
-    service_ctx.port = configStruct.port;
-    service_ctx.user = configStruct.user.c_str();
-    service_ctx.password = configStruct.password.c_str();
-    service_ctx.manufacturer = configStruct.manufacturer.c_str();
-    service_ctx.model = configStruct.model.c_str();
-    service_ctx.firmware_version = configStruct.firmware_version.c_str();
-    service_ctx.serial_number = configStruct.serial_number.c_str();
-    service_ctx.hardware_id = configStruct.hardware_id.c_str();
-
-    for (auto it = begin(configStruct.scopes); it != end(configStruct.scopes); ++it)
-    {
-        service_ctx.scopes.push_back(it->scopeUri);
-    }
-
-    service_ctx.eth_ifs.push_back(Eth_Dev_Param());
-    if (service_ctx.eth_ifs.back().open(configStruct.interfaces.c_str()) != 0)
-        onvifDaemon.daemon_error_exit("Can't open ethernet interface: %s - %m\n", configStruct.interfaces.c_str());
-
-    if (!service_ctx.set_tz_format(configStruct.tz_format.c_str()))
-        onvifDaemon.daemon_error_exit("Can't set tz_format: %s\n", service_ctx.get_cstr_err());
-
-    DEBUG_MSG("Configured Service\n");
-
-    // Onvif Media Profiles
-    for (auto it = begin(configStruct.profiles); it != end(configStruct.profiles); ++it)
-    {
-        profile.set_name(it->name.c_str());
-        profile.set_width(it->width.c_str());
-        profile.set_height(it->height.c_str());
-        profile.set_url(it->url.c_str());
-        profile.set_snapurl(it->snapUrl.c_str());
-        profile.set_type(it->type.c_str());
-
-        if (!service_ctx.add_profile(profile))
-            onvifDaemon.daemon_error_exit("Can't add Profile: %s\n", service_ctx.get_cstr_err());
-
-        DEBUG_MSG("configured Media Profile %s\n", profile.get_name().c_str());
-        profile.clear();
-    }
 }
 
 int main()
@@ -88,7 +44,7 @@ int main()
 
     std::optional<std::string> const configFile{arms::files::findConfigFile("/etc/onvif_srvd/config.cfg")};
     Configuration const configStruct{configFile};
-    ServiceContext service_ctx{};
+    ServiceContext service_ctx{configStruct};
     Daemon onvifDaemon;
 
     std::list<GStreamerRTSP> listOfStreams;
@@ -96,6 +52,8 @@ int main()
 
     DEBUG_MSG("processing_cfg\n");
     processing_cfg(configStruct, service_ctx, onvifDaemon);
+
+    arms::log("Configuring Profiles");
 
     // Set up two RTSP test card streams to run forever
     arms::logger::setupLogging(onvifDaemon.GetDaemonInfo().get_logLevel(), onvifDaemon.GetDaemonInfo().get_logAsync(),
@@ -105,7 +63,6 @@ int main()
     arms::log<arms::LOG_INFO>("Logging Enabled");
 
     arms::log<arms::LOG_INFO>("Found {} Streams in configStruct", configStruct.rtspStreams.size());
-
     // Create a thread for each stream and store it in a list
     for( auto itr : configStruct.rtspStreams )
     {

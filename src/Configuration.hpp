@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ConfigLoader.hpp"
-#include "ServiceContext.h"
 #include "eth_dev_param.h"
 #include <map>
 #include <optional>
@@ -139,8 +138,6 @@ struct Configuration
     explicit Configuration(ConfigLoader &loader);
     void loadAllSettings(ConfigLoader &loader);
 
-    void SetServiceContext(ServiceContext *service_ctx);
-
     // Daemon Info
     const char *pid_file{"/tmp/onvif_svrd_debug.pid"};
     const char *logLevel{"trace"};
@@ -160,6 +157,7 @@ struct Configuration
     std::string hardware_id{"UNKNOWN"};
     std::string interfaces{"enp5s0"};
     std::string tz_format{"0"};
+
 
     std::vector<Scopes> scopes{Scopes{0}, Scopes{1}, Scopes{2}, Scopes{3}};
     std::vector<Profiles> profiles{Profiles{0}, Profiles{1}};

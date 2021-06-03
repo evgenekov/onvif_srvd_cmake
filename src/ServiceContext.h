@@ -10,7 +10,8 @@
 #include "eth_dev_param.h"
 #include "mosquitto_hander.h"
 #include "smacros.h"
-
+#include "Configuration.hpp"
+#include "rtsp-streams.hpp"
 
 
 
@@ -19,7 +20,41 @@ class StreamProfile
 {
     public:
 
-        StreamProfile() { clear(); }
+       // StreamProfile() { clear(); }
+
+        StreamProfile() = default;
+        StreamProfile(libconfig::Setting const &wf)
+        {
+            if (wf.isGroup() && wf.lookupValue("profile_id", profile_id) && wf.lookupValue("name", name) &&
+                wf.lookupValue("width", width) && wf.lookupValue("height", height) && wf.lookupValue("url", url) &&
+                wf.lookupValue("snapUrl", snapurl) && wf.lookupValue("type", type))
+            {
+                return;
+            }
+            throw std::runtime_error("waveform config parse error");
+        }
+        StreamProfile(int const id) : profile_id{id}
+        {
+            switch (id)
+            {
+            case 0:
+                name = "Right_Monitor";
+                width = 1024;
+                height = 768;
+                url = "rtsp://%s:554/right";
+                snapurl = "";
+                type = tt__VideoEncoding__H264;
+                break;
+            case 1:
+                name = "Left_Monitor";
+                width = 1024;
+                height = 768;
+                url = "rtsp://%s:8554/left";
+                snapurl = "";
+                type = tt__VideoEncoding__H264;
+                break;
+            }
+        }
 
         std::string  get_name   (void) const { return name;   }
         int          get_width  (void) const { return width;  }
@@ -51,12 +86,13 @@ class StreamProfile
 
     private:
 
-        std::string  name;
-        int          width;
-        int          height;
-        std::string  url;
-        std::string  snapurl;
-        int          type;
+        int profile_id{0};
+        std::string  name{};
+        int          width{};
+        int          height{};
+        std::string  url{};
+        std::string  snapurl{};
+        int          type{};
 
 
         std::string  str_err;
@@ -125,6 +161,44 @@ class PTZNode
 class ServiceContext
 {
     public:
+
+    ServiceContext(Configuration const &configStruct)
+        : port{ configStruct.port },
+          user{ configStruct.user.c_str()},
+          password{ configStruct.password.c_str()},
+          manufacturer{ configStruct.manufacturer.c_str()},
+          model{ configStruct.model.c_str()},
+          firmware_version{ configStruct.firmware_version.c_str()},
+          serial_number{ configStruct.serial_number.c_str()},
+          hardware_id{ configStruct.hardware_id.c_str()}
+    {
+        for( auto itr : configStruct.scopes )
+        {
+            scopes.push_back(itr.scopeUri);
+        }
+
+        for( auto itr : configStruct.profiles )
+        {
+            profile.set_name(itr.name.c_str());
+            profile.set_width(itr.width.c_str());
+            profile.set_height(itr.height.c_str());
+            profile.set_url(itr.url.c_str());
+            profile.set_snapurl(itr.snapUrl.c_str());
+            profile.set_type(itr.type.c_str());
+
+            if (!add_profile(profile))
+                arms::log("Can't add Profile: {}", get_cstr_err());
+
+            profile.clear();
+        }
+
+        eth_ifs.push_back(Eth_Dev_Param());
+        if (eth_ifs.back().open(configStruct.interfaces.c_str()) != 0)
+            arms::log("Can't open ethernet interface: {}", configStruct.interfaces.c_str());
+
+        if (!set_tz_format(configStruct.tz_format.c_str()))
+            arms::log("Can't set tz_format: {}", get_cstr_err());
+    }
 
         enum TimeZoneForamt : unsigned int
         {
@@ -206,6 +280,7 @@ class ServiceContext
     private:
 
         std::map<std::string, StreamProfile> profiles;
+        StreamProfile profile;
         PTZNode ptz_node;
 
         TimeZoneForamt tz_format;
