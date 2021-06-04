@@ -21,23 +21,6 @@
 #include "DeviceBinding.nsmap"
 
 
-void processing_cfg(Configuration const &configStruct, ServiceContext &service_ctx, Daemon &onvifDaemon)
-{
-    // New function to handle config file
-    DaemonInfo daemonInfo;
-
-    // Get Daemon info
-    daemonInfo.set_pidFile(configStruct.pid_file);
-    daemonInfo.set_logLevel(configStruct.logLevel);
-    daemonInfo.set_logFile(configStruct.logFile);
-    daemonInfo.set_logFileSizeMb(configStruct.logFileSizeMb);
-    daemonInfo.set_logFileCount(configStruct.logFileCount);
-    daemonInfo.set_logAsync(configStruct.logAsync);
-
-    if (!onvifDaemon.SaveConfig(daemonInfo))
-        onvifDaemon.daemon_error_exit("Can't save daemon info: %s\n", service_ctx.get_cstr_err());
-}
-
 int main()
 {
     arms::signals::registerThreadInterruptSignal();
@@ -50,16 +33,10 @@ int main()
     std::list<GStreamerRTSP> listOfStreams;
     arms::signals::registerThreadInterruptSignal();
 
-    DEBUG_MSG("processing_cfg\n");
-    processing_cfg(configStruct, service_ctx, onvifDaemon);
-
-    arms::log("Configuring Profiles");
-
     // Set up two RTSP test card streams to run forever
-    arms::logger::setupLogging(onvifDaemon.GetDaemonInfo().get_logLevel(), onvifDaemon.GetDaemonInfo().get_logAsync(),
-                               onvifDaemon.GetDaemonInfo().get_logFile(),
-                               onvifDaemon.GetDaemonInfo().get_logFileSizeMb(),
-                               onvifDaemon.GetDaemonInfo().get_logFileCount());
+    arms::logger::setupLogging(configStruct.logLevel, configStruct.logAsync,
+                               configStruct.logFile, configStruct.logFileSizeMb,
+                               configStruct.logFileCount);
     arms::log<arms::LOG_INFO>("Logging Enabled");
 
     arms::log<arms::LOG_INFO>("Found {} Streams in configStruct", configStruct.rtspStreams.size());
