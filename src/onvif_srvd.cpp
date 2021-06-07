@@ -10,6 +10,7 @@
 #include <string>
 #include <unistd.h>
 #include <list>
+#include <signal.h>
 
 #include "ConfigLoader.hpp"
 #include "Configuration.hpp"
@@ -20,9 +21,23 @@
 #include "smacros.h"
 #include "DeviceBinding.nsmap"
 
+volatile std::sig_atomic_t gSignalStatus;
+
+void sigIntHandler( int signum )
+{
+    gSignalStatus = signum;
+}
+
+void sigTermHandler( int signum)
+{
+    gSignalStatus = signum;
+}
 
 int main()
 {
+    signal(SIGINT, sigIntHandler);
+    signal(SIGTERM, sigTermHandler);
+
     arms::signals::registerThreadInterruptSignal();
 
     std::optional<std::string> const configFile{arms::files::findConfigFile("/etc/onvif_srvd/config.cfg")};
@@ -49,7 +64,8 @@ int main()
     arms::ThreadWarden<GSoapInstance, ServiceContext> gSoapInstance{service_ctx};
     gSoapInstance.start();
 
-    for (int i{}; i < 50; ++i)
+    std::cout << gSignalStatus << std::endl;
+    while (!gSignalStatus)
     {
         gSoapInstance.checkAndRestartOnFailure();
         sleep(1);
@@ -57,6 +73,11 @@ int main()
 
     gSoapInstance.stop();
     arms::log<arms::LOG_INFO>("Stopped");
+
+    if( gSignalStatus == SIGTERM || gSignalStatus == SIGINT )
+    {
+        return EXIT_SUCCESS;
+    }
 
     return EXIT_FAILURE; // Error, normal exit from the main loop only through the signal handler.
 }
