@@ -3,7 +3,7 @@ Description=ONVIF Device(IP camera) Service server
 After=network-online.target
 
 [Service]
-Type=forking
+Type=simple
 ExecStart=/sbin/onvif_srvd
 
 TimeoutSec=4
