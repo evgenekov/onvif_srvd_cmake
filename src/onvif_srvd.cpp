@@ -63,21 +63,21 @@ int main()
 
     arms::ThreadWarden<GSoapInstance, ServiceContext> gSoapInstance{service_ctx};
     gSoapInstance.start();
-
-    std::cout << gSignalStatus << std::endl;
     while (!gSignalStatus)
     {
         gSoapInstance.checkAndRestartOnFailure();
         sleep(1);
     }
-
+    arms::log<arms::LOG_INFO>("Recieved Signal: {}", gSignalStatus);
     gSoapInstance.stop();
     arms::log<arms::LOG_INFO>("Stopped");
 
     if( gSignalStatus == SIGTERM || gSignalStatus == SIGINT )
     {
+        arms::log<arms::LOG_INFO>("Exiting Gracefully");
         return EXIT_SUCCESS;
     }
 
+    arms::log<arms::LOG_INFO>("Signal Unhandled, Exit error");
     return EXIT_FAILURE; // Error, normal exit from the main loop only through the signal handler.
 }
