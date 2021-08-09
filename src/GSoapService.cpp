@@ -57,7 +57,7 @@ int GSoapInstance::work()
 {
     // wait new client
     if (!soap_valid_socket(soap_accept(gSoap.getSoapPtr())))
-        sleep(20);
+        sleep(1);
     {
         arms::log<arms::LOG_INFO>("SOAP Invalid Socket");
         soap_stream_fault(gSoap.getSoapPtr(), std::cerr);

@@ -113,19 +113,19 @@ struct RTSPStreams
         switch (id)
         {
         case 0:
-            pipeline = " ! x264enc ! rtph264pay pt=96 name=pay0 )\"";
+            pipeline = " ! application/x-rtp,clock-rate=90000,payload=96 ! rtph264depay ! rtph264pay name=pay0 pt=96 )\"";
             udpPort = "5001";
             tcpPort = "8554";
             rtspUrl = "/left";
-            testStream = true;
+            testStream = false;
             testStreamSrc = "videotestsrc pattern=ball";
             break;
         case 1:
-            pipeline = " ! x264enc ! rtph264pay pt=96 name=pay0 )\"";
+            pipeline = " ! application/x-rtp,clock-rate=90000,payload=96 ! rtph264depay ! rtph264pay name=pay0 pt=96 )\"";
             udpPort = "5000";
             tcpPort = "554";
             rtspUrl = "/right";
-            testStream = true;
+            testStream = false;
             testStreamSrc = "videotestsrc";
             break;
         }
@@ -143,7 +143,7 @@ struct Configuration
 
     // Daemon Info
     const char *pid_file{"/tmp/onvif_svrd_debug.pid"};
-    const char *logLevel{"trace"};
+    const char *logLevel{"debug"};
     const char *logFile{""};
     int logFileSizeMb{0};
     int logFileCount{0};

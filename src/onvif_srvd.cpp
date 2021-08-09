@@ -135,9 +135,11 @@ int main()
     arms::ThreadWarden<GSoapInstance, ServiceContext> gSoapInstance{service_ctx};
     gSoapInstance.start();
 
-    for (int i{}; i < 50; ++i)
+    bool failVal = false;
+
+    while(!failVal)
     {
-        gSoapInstance.checkAndRestartOnFailure();
+        failVal = gSoapInstance.checkAndRestartOnFailure();
         sleep(1);
     }
 

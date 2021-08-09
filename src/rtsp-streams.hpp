@@ -217,8 +217,7 @@ public:
         }
         else
         {
-            ss << "\"( -v udpsrc port=" << stream.get_udpPort() << " ! rtpjitterbuffer"  <<
-            stream.get_pipeline();
+            ss << "\"( -v udpsrc port=" << stream.get_udpPort() <<  stream.get_pipeline();
         }
 
         std::string s = ss.str();
