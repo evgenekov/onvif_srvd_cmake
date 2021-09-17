@@ -110,6 +110,8 @@ class GSoapInstance
     ~GSoapInstance();
 
     void checkServiceCtx();
+    static int http_get(struct soap* soap);
+    static int copy_file(struct soap*, const char*, const char*);	/* copy file as HTTP response */
 
   private:
     ServiceContext serviceCtx;

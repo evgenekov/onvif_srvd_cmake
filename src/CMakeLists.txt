@@ -34,6 +34,7 @@ set( HDRFILES
          ${PROJECT_SOURCE_DIR}/generated/soapPTZBindingService.h
          ${PROJECT_SOURCE_DIR}/generated/soapStub.h
          ${PROJECT_SOURCE_DIR}/generated/soapH.h
+         ${GSOAP_PLUGIN_DIR}/httpget.h
 )
 
 set_source_files_properties(${SRCFILES} PROPERTIES LANGUAGE CXX)
