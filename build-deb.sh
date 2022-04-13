@@ -39,16 +39,17 @@ cd $OUT_DIR/wsdd
 if [ ! -d $OUT_DIR/wsdd/SDK ]
 then
     echo "No gSOAP Files in repo, copy and build"
-    cp -r $OUT_DIR/SDK $OUT_DIR/wsdd
-    cp -r $OUT_DIR/gsoap-2.8 $OUT_DIR/wsdd
+    mkdir SDK
+    cp -r $OUT_DIR/gsoap_src/gsoap.zip $OUT_DIR/wsdd/SDK
+    cp -r $OUT_DIR/gsoap_src/gsoap-2.8 $OUT_DIR/wsdd
     make
 else
     echo "Files already there, clean up wsdd directory and send files again"
     rm -r $OUT_DIR/wsdd/SDK
     rm -r $OUT_DIR/wsdd/gsoap-2.8
     make clean
-    cp -r $OUT_DIR/SDK $OUT_DIR/wsdd
-    cp -r $OUT_DIR/gsoap-2.8 $OUT_DIR/wsdd
+    cp -r $OUT_DIR/gsoap_src/gsoap.zip $OUT_DIR/wsdd/SDK
+    cp -r $OUT_DIR/gsoap_src/gsoap-2.8 $OUT_DIR/wsdd
     make
 fi
 
