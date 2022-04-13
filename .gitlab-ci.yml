@@ -1,4 +1,4 @@
-image: gcc
+image: ubuntu
 
 variables:
   DOCKER_DRIVER: overlay2
