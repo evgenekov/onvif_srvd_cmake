@@ -11,7 +11,7 @@ variables:
 #        - generated/
 
 before_script:
-    - apt update && apt -y install git git-lfs cmake build-essential ssh-client flex bison byacc make m4 openssl libssl-dev zlib1g-dev libcrypto++8 libconfig++-dev libmosquitto-dev
+    - apt update && apt -y install git git-lfs cmake build-essential ssh-client flex bison byacc m4 libconfig++9v5 libconfig++-dev mosquitto mosquitto-clients mosquitto-dev libgstreamer1.0-dev gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-vaapi libgstreamer-plugins-base1.0-dev libgstrtspserver-1.0-0 libgstrtspserver-1.0-dev openssl libssl-dev zlib1g-dev libcrypto++8 
 
 build:
     stage: build    
