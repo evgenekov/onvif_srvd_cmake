@@ -28,17 +28,18 @@ set( HDRFILES
          ${SRC_DIR}/ConfigLoader.hpp
          ${SRC_DIR}/Configuration.hpp
          ${SRC_DIR}/GSoapService.hpp
-         ${PROJECT_SOURCE_DIR}/generated/onvif.h
-         ${PROJECT_SOURCE_DIR}/generated/soapDeviceBindingService.h
-         ${PROJECT_SOURCE_DIR}/generated/soapMediaBindingService.h
-         ${PROJECT_SOURCE_DIR}/generated/soapPTZBindingService.h
-         ${PROJECT_SOURCE_DIR}/generated/soapStub.h
-         ${PROJECT_SOURCE_DIR}/generated/soapH.h
+         ${GENERATED_DIR}/onvif.h
+         ${GENERATED_DIR}/soapDeviceBindingService.h
+         ${GENERATED_DIR}/soapMediaBindingService.h
+         ${GENERATED_DIR}/soapPTZBindingService.h
+         ${GENERATED_DIR}/soapStub.h
+         ${GENERATED_DIR}/soapH.h
          ${GSOAP_PLUGIN_DIR}/httpget.h
 )
 
+
 set_source_files_properties(${SRCFILES} PROPERTIES LANGUAGE CXX)
-set_source_files_properties(${GENERATED_FILES} PROPERTIES LANGUAGE CXX)
+set_source_files_properties(${GENERATED_FILES} PROPERTIES LANGUAGE CXX GENERATED TRUE)
 
 set( CLANG_TOOLS_FILES ${CLANG_TOOLS_FILES} ${SRCFILES} ${HDRFILES} PARENT_SCOPE)
 
@@ -49,7 +50,7 @@ add_executable(onvif_srvd ${SRCFILES})
 add_dependencies(onvif_srvd gsoap_src)
 target_sources(onvif_srvd PUBLIC ${GENERATED_FILES})
 
-
+message("Target Link onvif-srvd")
 target_link_libraries(onvif_srvd
     ${SSL_LIBRARIES}
     ${ZLIB_LIBRARIES}
@@ -61,6 +62,7 @@ target_link_libraries(onvif_srvd
     ${LIBMOSQUITTO_LIBRARIES}
 )
 
+message("Target Include onvif-srvd")
 target_include_directories(onvif_srvd PUBLIC
     ${LIBCONFIGXX_INCLUDE_DIRS}
     ${LIBMOSQUITTO_INCLUDE_DIRS}
