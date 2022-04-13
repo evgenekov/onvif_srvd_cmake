@@ -1,17 +1,17 @@
-image: gcc
+image: ubuntu
 
 variables:
   DOCKER_DRIVER: overlay2
   GIT_SUBMODULE_STRATEGY: recursive
  
-cache:
-    key: one-key-to-rull-them-all
-    paths:
-        - gsoap-2.8/
-        - generated/
+#cache:
+#    key: one-key-to-rull-them-all
+#    paths:
+#        - gsoap-2.8/
+#        - generated/
 
 before_script:
-    - apt update && apt -y install flex bison byacc make m4 openssl libssl-dev zlib1g-dev libcrypto++8 libconfig-dev libmosquitto-dev
+    - apt update && apt -y install ssh-client flex bison byacc make m4 openssl libssl-dev zlib1g-dev libcrypto++8 libconfig-dev libmosquitto-dev
 
 build:
     stage: build    
