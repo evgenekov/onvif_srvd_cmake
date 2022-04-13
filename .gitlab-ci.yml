@@ -1,4 +1,4 @@
-image: ubuntu
+image: ubuntu impish
 
 variables:
   DOCKER_DRIVER: overlay2
