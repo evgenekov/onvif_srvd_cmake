@@ -3,4 +3,5 @@
 	url = ../wsdd.git
 [submodule "external/armoury"]
 	path = external/armoury
-	url = ../external/armoury.git
+	url = ../../../../rinicom-open/armoury
+	branch = master
