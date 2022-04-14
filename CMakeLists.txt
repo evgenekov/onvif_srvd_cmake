@@ -78,6 +78,7 @@ if (0)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=leak")
 endif ()
 
+configure_file(${PROJECT_SOURCE_DIR}/config.cfg ${CMAKE_BINARY_DIR} COPYONLY)
 
 ExternalProject_Add(
     gsoap_src
